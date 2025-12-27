@@ -1,0 +1,123 @@
+{
+  "conversations": [
+    {
+      "id": "housewarming-grill",
+      "scenario": "grill",
+      "messages": [
+        {
+          "role": "assistant",
+          "content": "Hey! What are you looking for today? How can I help you?"
+        },
+        {
+          "role": "user",
+          "content": "Hi! I'm visiting a friend who just bought a new house and I want to bring them a gift. Can you help me find something nice?"
+        },
+        {
+          "role": "assistant",
+          "content": "That's wonderful! Housewarming gifts are always special! Let me help you find the perfect gift.\n\nFirst, tell me a bit about your friend:\n1. What's their gender?\n2. How old are they?\n3. What do they enjoy doing?"
+        },
+        {
+          "role": "user",
+          "content": "My friend is James, he's 35 years old, He absolutely loves cooking, especially foods that prepared on BBQ."
+        },
+        {
+          "role": "assistant",
+          "content": "Perfect , how do you think about the GRILL for housewarming gift?  James will be able to host amazing BBQ parties in his new backyard!\n\nA couple more questions to find the best option:\n1. What's your budget?\n2. What matters most to you in a grill? (brand, features, size)"
+        },
+        {
+          "role": "user",
+          "content": "I want a good quality grill from a reputable brand. My budget is max $400, not more than that."
+        },
+        {
+          "role": "assistant",
+          "content": "Got it! A quality charcoal grill under $400 from a great brand - that's a fantastic budget for an excellent grill!\n\nLet me search for the best deals...",
+          "showProducts": true,
+          "products": [
+            {
+              "id": "grill-1",
+              "name": "Weber Original Kettle Premium 22\"",
+              "price": 189,
+              "store": "Amazon",
+              "image": "https://m.media-amazon.com/images/I/71dY-VdXOGL._AC_SL1500_.jpg",
+              "rating": 4.8,
+              "url": "https://www.amazon.com/s?k=weber+original+kettle+premium+22"
+            },
+            {
+              "id": "grill-2",
+              "name": "Char-Griller E1515 Patio Pro",
+              "price": 169,
+              "store": "Home Depot",
+              "image": "https://m.media-amazon.com/images/I/81Nh7S7BFPL._AC_SL1500_.jpg",
+              "rating": 4.5,
+              "url": "https://www.homedepot.com/s/char-griller+patio+pro"
+            },
+            {
+              "id": "grill-3",
+              "name": "Royal Gourmet CD1824A Charcoal",
+              "price": 199,
+              "store": "Walmart",
+              "image": "https://m.media-amazon.com/images/I/81MnV4jrXcL._AC_SL1500_.jpg",
+              "rating": 4.6,
+              "url": "https://www.walmart.com/search?q=royal+gourmet+charcoal+grill"
+            },
+            {
+              "id": "grill-4",
+              "name": "Weber Master-Touch Charcoal 22\"",
+              "price": 359,
+              "store": "Amazon",
+              "image": "https://m.media-amazon.com/images/I/71YlH1lVHxL._AC_SL1500_.jpg",
+              "rating": 4.9,
+              "url": "https://www.amazon.com/s?k=weber+master+touch+charcoal+22"
+            },
+            {
+              "id": "grill-5",
+              "name": "Napoleon Charcoal Kettle Grill",
+              "price": 299,
+              "store": "Amazon",
+              "image": "https://m.media-amazon.com/images/I/71Qf5dGrURL._AC_SL1500_.jpg",
+              "rating": 4.7,
+              "url": "https://www.amazon.com/s?k=napoleon+charcoal+kettle+grill"
+            },
+            {
+              "id": "grill-6",
+              "name": "Oklahoma Joe's Highland Smoker",
+              "price": 349,
+              "store": "Lowes",
+              "image": "https://m.media-amazon.com/images/I/71ZfGwHy69L._AC_SL1500_.jpg",
+              "rating": 4.6,
+              "url": "https://www.lowes.com/search?searchTerm=oklahoma+joe+highland"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "knownFriends": [
+    {
+      "id": "james",
+      "name": "James",
+      "age": 35,
+      "gender": "male",
+      "interests": ["grilling", "cooking", "technology", "watches"],
+      "purchaseHistory": [
+        { "item": "Charcoal Grill", "occasion": "Housewarming" }
+      ]
+    },
+    {
+      "id": "jessica",
+      "name": "Jessica",
+      "age": 28,
+      "gender": "female",
+      "interests": ["fashion", "yoga", "cooking"],
+      "purchaseHistory": []
+    },
+    {
+      "id": "eugene",
+      "name": "Eugene",
+      "age": 42,
+      "gender": "male",
+      "interests": ["gaming", "tech gadgets", "music"],
+      "purchaseHistory": []
+    }
+  ]
+}

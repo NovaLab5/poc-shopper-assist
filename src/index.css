@@ -1,0 +1,174 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Sweet Dill brand - bright lime green #8BC34A */
+    --background: 0 0% 100%;
+    --foreground: 220 15% 20%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 15% 20%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 15% 20%;
+
+    --primary: 88 50% 53%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 88 20% 95%;
+    --secondary-foreground: 220 15% 25%;
+
+    --muted: 220 10% 96%;
+    --muted-foreground: 220 10% 45%;
+
+    --accent: 88 55% 58%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 10% 90%;
+    --input: 220 10% 90%;
+    --ring: 88 50% 53%;
+
+    --radius: 1rem;
+
+    /* Sweet Dill brand colors - lime green */
+    --sour-green: 88 50% 53%;
+    --sour-green-light: 88 55% 62%;
+    --sour-green-dark: 88 50% 45%;
+
+    /* Chat bubble colors */
+    --chat-ai: 88 50% 53%;
+    --chat-user: 220 15% 25%;
+
+    /* Custom tokens */
+    --gradient-header: linear-gradient(135deg, hsl(88 50% 53%) 0%, hsl(88 55% 62%) 100%);
+    --pill-bg: 88 20% 95%;
+    --pill-hover: 88 25% 90%;
+    --pill-active: 88 50% 53%;
+    --shadow-soft: 0 4px 24px -6px hsl(220 20% 20% / 0.12);
+    --shadow-card: 0 2px 16px -4px hsl(220 20% 20% / 0.08);
+    
+    /* Page background */
+    --page-bg: 220 15% 96%;
+  }
+
+  .dark {
+    --background: 220 15% 10%;
+    --foreground: 0 0% 95%;
+
+    --card: 220 15% 14%;
+    --card-foreground: 0 0% 95%;
+
+    --popover: 220 15% 14%;
+    --popover-foreground: 0 0% 95%;
+
+    --primary: 88 50% 53%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 15% 20%;
+    --secondary-foreground: 0 0% 90%;
+
+    --muted: 220 15% 18%;
+    --muted-foreground: 220 10% 60%;
+
+    --accent: 88 55% 58%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 15% 22%;
+    --input: 220 15% 22%;
+    --ring: 88 50% 53%;
+
+    /* Sweet Dill brand colors (dark mode) */
+    --sour-green: 88 50% 58%;
+    --sour-green-light: 88 55% 65%;
+    --sour-green-dark: 88 50% 48%;
+
+    /* Chat bubble colors (dark mode) */
+    --chat-ai: 88 50% 58%;
+    --chat-user: 220 15% 30%;
+
+    --gradient-header: linear-gradient(135deg, hsl(88 45% 35%) 0%, hsl(88 40% 25%) 100%);
+    --pill-bg: 220 15% 20%;
+    --pill-hover: 220 15% 25%;
+    --pill-active: 88 50% 53%;
+    --shadow-soft: 0 4px 20px -4px hsl(0 0% 0% / 0.4);
+    --shadow-card: 0 2px 12px -2px hsl(0 0% 0% / 0.3);
+    
+    --page-bg: 220 15% 8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'DM Sans', sans-serif;
+  }
+}
+
+@layer components {
+  .gradient-header {
+    background: var(--gradient-header);
+  }
+
+  .card-elevated {
+    box-shadow: var(--shadow-card);
+  }
+
+  .shadow-soft {
+    box-shadow: var(--shadow-soft);
+  }
+}
+
+@layer utilities {
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-out forwards;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.4s ease-out forwards;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.2s ease-out forwards;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes slideUp {
+    from { 
+      opacity: 0; 
+      transform: translateY(16px); 
+    }
+    to { 
+      opacity: 1; 
+      transform: translateY(0); 
+    }
+  }
+
+  @keyframes scaleIn {
+    from { 
+      opacity: 0; 
+      transform: scale(0.95); 
+    }
+    to { 
+      opacity: 1; 
+      transform: scale(1); 
+    }
+  }
+}
