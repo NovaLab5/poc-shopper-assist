@@ -868,10 +868,18 @@ export function BrowseSelectInterface({ onBack, userName }: BrowseSelectInterfac
       return (
         <div className="space-y-6 animate-fade-in px-4 py-6">
           <div className="text-center space-y-2">
-            <h2 className="text-2xl font-semibold text-foreground">
-              Select a Friend
-            </h2>
-            <p className="text-sm text-muted-foreground">
+            <div className="flex items-center justify-center gap-2 mb-1">
+              <h2 className="text-xl font-semibold text-foreground">
+                Select a Friend
+              </h2>
+              {friendsList.length > 0 && (
+                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-primary/10 text-primary rounded-full">
+                  <Users className="w-3.5 h-3.5" />
+                  <span className="text-xs font-semibold">{friendsList.length}</span>
+                </div>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">
               Choose from your friends or add a new one
             </p>
           </div>
@@ -893,20 +901,20 @@ export function BrowseSelectInterface({ onBack, userName }: BrowseSelectInterfac
                         setPersonaInterests(friend.interests);
                         setOthersStep('loading_found_persona');
                       }}
-                      className="w-full p-4 bg-card border border-border/50 rounded-lg hover:border-primary/50 hover:shadow-md transition-all duration-200 text-left"
+                      className="w-full p-3.5 bg-card border border-border/50 rounded-lg hover:border-primary/50 hover:shadow-md transition-all duration-200 text-left"
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <h3 className="font-semibold text-foreground text-lg">{friend.name}</h3>
-                          <p className="text-sm text-muted-foreground mt-1">
+                          <h3 className="font-semibold text-foreground text-base">{friend.name}</h3>
+                          <p className="text-xs text-muted-foreground mt-0.5">
                             {friend.age} years old • {friend.gender}
                           </p>
                           {friend.interests.length > 0 && (
-                            <div className="flex flex-wrap gap-1.5 mt-2">
+                            <div className="flex flex-wrap gap-1 mt-1.5">
                               {friend.interests.slice(0, 3).map((interest, idx) => (
                                 <span
                                   key={idx}
-                                  className="px-2 py-0.5 bg-primary/10 text-primary rounded-full text-xs"
+                                  className="px-1.5 py-0.5 bg-primary/10 text-primary rounded-full text-[10px]"
                                 >
                                   {interest}
                                 </span>
@@ -914,7 +922,7 @@ export function BrowseSelectInterface({ onBack, userName }: BrowseSelectInterfac
                             </div>
                           )}
                         </div>
-                        <User className="w-5 h-5 text-muted-foreground ml-3" />
+                        <User className="w-4 h-4 text-muted-foreground ml-3" />
                       </div>
                     </button>
                   ))}
@@ -949,20 +957,20 @@ export function BrowseSelectInterface({ onBack, userName }: BrowseSelectInterfac
                         setPersonaInterests(friend.interests);
                         setOthersStep('loading_found_persona');
                       }}
-                      className="w-full p-4 bg-card border border-border/50 rounded-lg hover:border-primary/50 hover:shadow-md transition-all duration-200 text-left"
+                      className="w-full p-3.5 bg-card border border-border/50 rounded-lg hover:border-primary/50 hover:shadow-md transition-all duration-200 text-left"
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <h3 className="font-semibold text-foreground text-lg">{friend.name}</h3>
-                          <p className="text-sm text-muted-foreground mt-1">
+                          <h3 className="font-semibold text-foreground text-base">{friend.name}</h3>
+                          <p className="text-xs text-muted-foreground mt-0.5">
                             {friend.age} years old • {friend.gender}
                           </p>
                           {friend.interests.length > 0 && (
-                            <div className="flex flex-wrap gap-1.5 mt-2">
+                            <div className="flex flex-wrap gap-1 mt-1.5">
                               {friend.interests.slice(0, 3).map((interest, idx) => (
                                 <span
                                   key={idx}
-                                  className="px-2 py-0.5 bg-primary/10 text-primary rounded-full text-xs"
+                                  className="px-1.5 py-0.5 bg-primary/10 text-primary rounded-full text-[10px]"
                                 >
                                   {interest}
                                 </span>
@@ -970,7 +978,7 @@ export function BrowseSelectInterface({ onBack, userName }: BrowseSelectInterfac
                             </div>
                           )}
                         </div>
-                        <User className="w-5 h-5 text-muted-foreground ml-3" />
+                        <User className="w-4 h-4 text-muted-foreground ml-3" />
                       </div>
                     </button>
                   ))}

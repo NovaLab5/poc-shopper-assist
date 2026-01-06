@@ -51,7 +51,7 @@ router.post('/', async (req, res) => {
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
+      const errorData = await response.json() as any;
       console.error('Google API error:', errorData);
       return res.status(response.status).json({
         error: errorData.error?.message || 'Speech recognition failed',
@@ -59,7 +59,7 @@ router.post('/', async (req, res) => {
       });
     }
 
-    const data = await response.json();
+    const data = await response.json() as any;
 
     if (!data.results || data.results.length === 0) {
       return res.json({

@@ -5,6 +5,7 @@ export interface IProduct extends Document {
   name: string;
   brand: string;
   category: string;
+  subcategory?: string;
   tags: string[];
   price: number;
   amazonUrl: string;
@@ -34,7 +35,10 @@ const ProductSchema: Schema = new Schema(
     category: {
       type: String,
       required: true,
-      lowercase: true,
+      index: true,
+    },
+    subcategory: {
+      type: String,
       index: true,
     },
     tags: {
@@ -70,7 +74,7 @@ const ProductSchema: Schema = new Schema(
 );
 
 // Indexes for efficient queries
-ProductSchema.index({ category: 1, price: 1 });
+ProductSchema.index({ category: 1, subcategory: 1, price: 1 });
 ProductSchema.index({ tags: 1 });
 ProductSchema.index({ name: 'text', brand: 'text' });
 

@@ -10,7 +10,7 @@ interface SimpleSearchProps {
 
 const CATEGORY_OPTIONS = [
   { id: 'all', label: 'All', icon: ShoppingBag },
-  { id: 'grill', label: 'Grills', icon: Flame },
+  { id: 'grills', label: 'Grills', icon: Flame },
   { id: 'skechers', label: 'Skechers', icon: Footprints },
 ];
 

@@ -36,13 +36,22 @@ USER PROFILE:
 ${personasSection}
 CONVERSATION FLOW - FOLLOW EXACTLY:
 
-STEP 1: User mentions buying for someone (mother, father, friend, etc.)
-→ Response: "That's wonderful! Is this someone I know? What's their name?"
+STEP 1: User mentions buying for someone
+→ Check if they mentioned a specific name (e.g., "for Jessica", "for my mother")
+→ If name is mentioned AND person is in KNOWN PERSONAS DATABASE:
+   Response: "Great! I remember [name]! They're [age] and love [interests]. What's the occasion?"
+→ If name is mentioned but NOT in database OR no name mentioned:
+   Response: "That's wonderful! Is this someone I know? What's their name?"
 → DO NOT add [SHOW_PRODUCTS]
 
 STEP 2: User provides person's name or type (e.g., "my mother", "James")
 → If person is in KNOWN PERSONAS DATABASE: Acknowledge warmly and mention what you know about them, then ask "What's the occasion?"
-→ If person is NOT in database: Ask for their relationship (mother/father/friend), age, gender, and interests
+→ If person is NOT in database: Ask for their information in ONE question: "I'd love to help! Can you tell me about them? Their name, age, gender, and what they're interested in?"
+→ DO NOT add [SHOW_PRODUCTS]
+
+STEP 2b: User provides person's details (only if person was NOT in database)
+→ User should provide: name, age, gender, interests (e.g., "Sarah, 28, female, loves yoga and cooking")
+→ Response: "Got it! I'll remember Sarah for next time. What's the occasion?"
 → DO NOT add [SHOW_PRODUCTS]
 
 STEP 3: User provides occasion
@@ -92,17 +101,77 @@ Start each conversation by greeting the user warmly.`;
  * Extract and save persona information from conversation
  * This helps capture personas mentioned during voice chat
  */
-async function extractAndSavePersona(conversationText: string): Promise<void> {
-  // Simple pattern matching for persona information
-  // In production, you might use NLP or more sophisticated extraction
+async function extractAndSavePersona(aiResponse: string, userMessage: string): Promise<void> {
+  try {
+    // Use Gemini to extract persona information from the conversation
+    const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY!);
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
 
-  // Example patterns:
-  // "My mother is 65 years old"
-  // "She loves gardening and cooking"
-  // "He's into gaming and tech"
+    const extractionPrompt = `Analyze this conversation and extract persona information if present.
 
-  // This is a placeholder - you can enhance this with better NLP
-  // For now, personas will be saved through the Browse & Select interface
+User said: "${userMessage}"
+Assistant said: "${aiResponse}"
+
+If the user provided information about a person (name, age, gender, interests, relationship), extract it in this EXACT JSON format:
+{
+  "hasPersona": true,
+  "type": "friend" or "mother" or "father" or "brother" or "sister",
+  "name": "person's name",
+  "age": number,
+  "gender": "male" or "female" or "other",
+  "interests": ["interest1", "interest2"]
+}
+
+If NO persona information is present, return:
+{
+  "hasPersona": false
+}
+
+IMPORTANT: Only extract if the user explicitly provided this information. Do not make assumptions.
+Return ONLY valid JSON, no other text.`;
+
+    const result = await model.generateContent(extractionPrompt);
+    const responseText = result.response.text().trim();
+
+    // Remove markdown code blocks if present
+    const jsonText = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+
+    const extracted = JSON.parse(jsonText);
+
+    if (extracted.hasPersona && extracted.name && extracted.age && extracted.gender) {
+      // Check if persona already exists
+      const existingPersona = await Persona.findOne({
+        type: extracted.type,
+        name: extracted.name
+      });
+
+      if (!existingPersona) {
+        // Create new persona
+        const newPersona = new Persona({
+          type: extracted.type,
+          name: extracted.name,
+          age: extracted.age,
+          gender: extracted.gender.toLowerCase(),
+          interests: extracted.interests || []
+        });
+
+        await newPersona.save();
+        console.log(`✅ Auto-saved new persona: ${extracted.name} (${extracted.type})`);
+      } else {
+        // Update existing persona with new information
+        if (extracted.interests && extracted.interests.length > 0) {
+          existingPersona.interests = [...new Set([...existingPersona.interests, ...extracted.interests])];
+        }
+        existingPersona.age = extracted.age;
+        existingPersona.gender = extracted.gender.toLowerCase();
+        await existingPersona.save();
+        console.log(`✅ Updated existing persona: ${extracted.name} (${extracted.type})`);
+      }
+    }
+  } catch (error) {
+    console.error('Error extracting persona:', error);
+    // Don't throw - this is a background task
+  }
 }
 
 /**
@@ -156,11 +225,24 @@ router.post('/', async (req, res) => {
     const result = await chat.sendMessage(chatMessages[chatMessages.length - 1].parts[0].text);
     const aiResponse = result.response.text();
 
+    // Extract the last user message for persona extraction
+    const lastUserMessage = !isFirstMessage && messages && messages.length > 0
+      ? messages[messages.length - 1].content
+      : '';
+
+    // Try to extract and save persona information in the background
+    if (lastUserMessage) {
+      extractAndSavePersona(aiResponse, lastUserMessage).catch(err => {
+        console.error('Background persona extraction failed:', err);
+      });
+    }
+
     // Check for product trigger
     let showProducts = null;
     let cleanResponse = aiResponse;
 
-    const productMatch = aiResponse.match(/\[SHOW_PRODUCTS:(\w+)\]/);
+    // Updated regex to support hyphens in category names (e.g., running-gear, board-games)
+    const productMatch = aiResponse.match(/\[SHOW_PRODUCTS:([\w-]+)\]/);
     if (productMatch) {
       const category = productMatch[1];
       // Extract budget from conversation if mentioned
@@ -174,7 +256,8 @@ router.post('/', async (req, res) => {
         category: category,
         budget: budget
       };
-      cleanResponse = aiResponse.replace(/\[SHOW_PRODUCTS:\w+\]/, '').trim();
+      // Updated regex to support hyphens in category names
+      cleanResponse = aiResponse.replace(/\[SHOW_PRODUCTS:[\w-]+\]/, '').trim();
     }
 
     // Save conversation to MongoDB (if userId provided)

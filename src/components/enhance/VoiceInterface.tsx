@@ -10,7 +10,7 @@ const getCategoryDisplayName = (category: string): string => {
   const categoryMap: Record<string, string> = {
     'apple_watch': 'Apple Watch',
     'sunglasses': 'sunglasses',
-    'grill': 'grills',
+    'grills': 'grills',
   };
   return categoryMap[category] || category;
 };

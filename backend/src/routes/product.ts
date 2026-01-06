@@ -4,6 +4,104 @@ import Product from '../models/Product.js';
 const router = express.Router();
 
 /**
+ * Category/Subcategory mapping - maps user-friendly names to database categories
+ */
+const CATEGORY_MAPPING: Record<string, { category?: string; subcategory?: string }> = {
+  // Electronics
+  'laptops': { category: 'Electronics', subcategory: 'Laptops' },
+  'headphones': { category: 'Electronics', subcategory: 'Headphones' },
+  'smartphones': { category: 'Electronics', subcategory: 'Phones' },
+  'phones': { category: 'Electronics', subcategory: 'Phones' },
+  'tv': { category: 'Electronics', subcategory: 'TVs' },
+  'tvs': { category: 'Electronics', subcategory: 'TVs' },
+  'cameras': { category: 'Electronics', subcategory: 'Cameras' },
+  'watches': { category: 'Electronics', subcategory: 'Wearables' },
+  'tablets': { category: 'Electronics', subcategory: 'Tablets' },
+  'gaming': { category: 'Electronics', subcategory: 'Gaming' },
+
+  // Home & Kitchen
+  'grills': { category: 'Home & Kitchen', subcategory: 'Grills' },
+  'kitchen': { category: 'Home & Kitchen', subcategory: 'Kitchen' },
+  'home-office': { category: 'Home & Kitchen', subcategory: 'Home Office' },
+  'furniture': { category: 'Home & Kitchen', subcategory: 'Furniture' },
+  'dorm-essentials': { category: 'Home & Kitchen', subcategory: 'Dorm Essentials' },
+
+  // Fashion
+  'socks': { category: 'Fashion', subcategory: 'Socks' },
+  'pajamas': { category: 'Fashion', subcategory: 'Sleepwear' },
+  'clothing': { category: 'Fashion', subcategory: 'Clothing' },
+  'shoes': { category: 'Fashion', subcategory: 'Shoes' },
+  'bags': { category: 'Fashion', subcategory: 'Bags' },
+  'jewellery': { category: 'Fashion', subcategory: 'Jewelry' },
+  'jewelry': { category: 'Fashion', subcategory: 'Jewelry' },
+
+  // Beauty
+  'facemasks': { category: 'Beauty', subcategory: 'Face Masks' },
+  'skincare': { category: 'Beauty', subcategory: 'Skincare' },
+  'haircare': { category: 'Beauty', subcategory: 'Hair Care' },
+  'makeup': { category: 'Beauty', subcategory: 'Makeup' },
+
+  // Sports & Outdoors
+  'running': { category: 'Sports & Outdoors', subcategory: 'Running' },
+  'running-gear': { category: 'Sports & Outdoors', subcategory: 'Running' },
+  'fitness': { category: 'Sports & Outdoors', subcategory: 'Fitness' },
+  'outdoor': { category: 'Sports & Outdoors', subcategory: 'Outdoor Gear' },
+  'beach': { category: 'Sports & Outdoors', subcategory: 'Beach' },
+
+  // Travel
+  'travel': { category: 'Travel', subcategory: 'Travel Gear' },
+  'travel-gear': { category: 'Travel', subcategory: 'Travel Gear' },
+  'travel-gear-and-accessories': { category: 'Travel', subcategory: 'Travel Gear' },
+  'road-trip': { category: 'Travel', subcategory: 'Road Trip' },
+
+  // Toys & Games
+  'board-games': { category: 'Toys & Games', subcategory: 'Board Games' },
+  'toys': { category: 'Toys & Games', subcategory: 'Toys' },
+
+  // Food & Beverage
+  'tinned-fish': { category: 'Food & Beverage', subcategory: 'Tinned Fish' },
+  'food': { category: 'Food & Beverage', subcategory: 'Food' },
+  'beverages': { category: 'Food & Beverage', subcategory: 'Beverages' },
+
+  // Pets
+  'pets': { category: 'Pets', subcategory: 'Pet Supplies' },
+
+  // Gifts
+  'gifts': { category: 'Gifts', subcategory: 'Gift Ideas' },
+  'luxurious-gifts': { category: 'Gifts', subcategory: 'Gift Ideas' },
+  'anniversary-gifts': { category: 'Gifts', subcategory: 'Gift Ideas' },
+  'retirement-gifts': { category: 'Gifts', subcategory: 'Gift Ideas' },
+  'self-care-gifts-for-yourself': { category: 'Gifts', subcategory: 'Gift Ideas' },
+  '25-kids-birthday-party-favors': { category: 'Toys & Games', subcategory: 'Toys' },
+  'college-dorm-essentials': { category: 'Home & Kitchen', subcategory: 'Dorm Essentials' },
+};
+
+/**
+ * Normalize category - converts user-friendly category to database query
+ */
+function normalizeCategory(category: string): any {
+  const normalized = category.toLowerCase();
+
+  // Check if we have a mapping for this category
+  if (CATEGORY_MAPPING[normalized]) {
+    const mapping = CATEGORY_MAPPING[normalized];
+    const query: any = {};
+
+    if (mapping.category) {
+      query.category = mapping.category;
+    }
+    if (mapping.subcategory) {
+      query.subcategory = mapping.subcategory;
+    }
+
+    return query;
+  }
+
+  // If no mapping, try to match by subcategory (case-insensitive)
+  return { subcategory: new RegExp(`^${normalized}$`, 'i') };
+}
+
+/**
  * GET /api/v1/products
  * Get all products with optional filters
  * Query params: category, minPrice, maxPrice, tags, search
@@ -14,9 +112,11 @@ router.get('/', async (req: Request, res: Response) => {
     
     // Build query
     const query: any = {};
-    
+
     if (category) {
-      query.category = (category as string).toLowerCase();
+      const categoryQuery = normalizeCategory(category as string);
+      // Merge the category query into the main query
+      Object.assign(query, categoryQuery);
     }
     
     if (minPrice || maxPrice) {
@@ -90,7 +190,7 @@ router.get('/category/:category', async (req: Request, res: Response) => {
     const { category } = req.params;
     const { budget } = req.query;
 
-    const query: any = { category: category.toLowerCase() };
+    const query: any = normalizeCategory(category);
 
     if (budget) {
       query.price = { $lte: Number(budget) };
@@ -120,7 +220,7 @@ router.get('/category/:category/price-range', async (req: Request, res: Response
   try {
     const { category } = req.params;
 
-    const query = { category: category.toLowerCase() };
+    const query = normalizeCategory(category);
 
     // Find min and max prices using aggregation
     const result = await Product.aggregate([
