@@ -308,6 +308,8 @@ export function ChatInterface({ onBack, getChatState, setChatState, onReset, onS
         setLoadingMessage("Saving persona information...");
 
         setTimeout(async () => {
+          console.log('💾 Saving persona:', { type: personaType, name, age, gender, interests });
+
           const savedPersona = await savePersona({
             type: personaType,
             name,
@@ -317,7 +319,10 @@ export function ChatInterface({ onBack, getChatState, setChatState, onReset, onS
           });
 
           if (savedPersona) {
+            console.log('✅ Persona saved successfully:', savedPersona);
             setCurrentPersona(savedPersona);
+          } else {
+            console.error('❌ Failed to save persona');
           }
 
           setIsTyping(false);

@@ -105,7 +105,6 @@ export function BrowseSelectInterface({ onBack, userName }: BrowseSelectInterfac
   // Friend selection state
   const [friendsList, setFriendsList] = useState<Persona[]>([]);
   const [friendSearchQuery, setFriendSearchQuery] = useState<string>('');
-  const [friendsLoaded, setFriendsLoaded] = useState<boolean>(false);
 
   // Separate search queries for category and occasion
   const [categorySearchQuery, setCategorySearchQuery] = useState<string>('');
