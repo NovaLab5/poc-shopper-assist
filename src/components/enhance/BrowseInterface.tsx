@@ -116,11 +116,10 @@ export function BrowseInterface({ onBack, userName }: BrowseInterfaceProps) {
       return;
     }
 
-    // For "others" and "browsing" flows, we have custom loading screens, so don't show the generic overlay
+    // For "others" flow, we have custom loading screens, so don't show the generic overlay
     const isOthersFlow = state.entryPoint === 'others';
-    const isBrowsingFlow = state.entryPoint === 'browsing';
 
-    if (isOthersFlow || isBrowsingFlow) {
+    if (isOthersFlow) {
       answerQuestion(answer);
     } else {
       setIsAIThinking(true);
@@ -690,22 +689,6 @@ export function BrowseInterface({ onBack, userName }: BrowseInterfaceProps) {
     switch (state.currentStep) {
       case 'entry':
         return <EntryPointScreen entryPoints={entryPoints} onSelect={selectEntryPoint} />;
-      case 'loading_browsing_welcome':
-        return (
-          <SimpleLoadingScreen
-            message="Let's see what you might be interested in today"
-            onComplete={completeLoading}
-            duration={3500}
-          />
-        );
-      case 'loading_browsing_data':
-        return (
-          <SimpleLoadingScreen
-            message="SweetDill AI is collecting historical data on you..."
-            onComplete={completeLoading}
-            duration={3500}
-          />
-        );
       case 'questions':
         if (!currentQuestion) return null;
         return (
@@ -844,7 +827,7 @@ export function BrowseInterface({ onBack, userName }: BrowseInterfaceProps) {
         }
         return <PreferenceScreen preference={preferences} onSelect={handlePreferenceSelect} />;
       case 'results':
-        if (state.entryPoint === 'myself' || state.entryPoint === 'others' || state.entryPoint === 'browsing') {
+        if (state.entryPoint === 'myself' || state.entryPoint === 'others') {
           if (!results) {
             return (
               <div className="text-center py-4 space-y-2">
@@ -1012,8 +995,6 @@ export function BrowseInterface({ onBack, userName }: BrowseInterfaceProps) {
       {/* Progress */}
       {state.currentStep !== 'entry' &&
        state.currentStep !== 'results' &&
-       state.currentStep !== 'loading_browsing_welcome' &&
-       state.currentStep !== 'loading_browsing_data' &&
        state.currentStep !== 'loading_recipient_info' &&
        state.currentStep !== 'loading_ai_thinking' &&
        state.currentStep !== 'loading_interests_check' &&

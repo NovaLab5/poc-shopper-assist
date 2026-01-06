@@ -78,11 +78,6 @@ export function useFlowNavigation() {
     const node = data[entryPoint] as FlowEntryNode;
     let steps = 1; // entry
 
-    // For browsing flow, add 2 initial loading screens
-    if (entryPoint === 'browsing') {
-      steps += 2; // loading_browsing_welcome + loading_browsing_data
-    }
-
     if (node?.questions?.length) {
       steps += node.questions.length; // each question is a step
 
@@ -153,10 +148,10 @@ export function useFlowNavigation() {
     return allCats.slice(4);
   }, [currentEntryNode]);
 
-  // Get all browsing categories for search
+  // Get all categories for search (empty array since browsing is removed)
   const allBrowsingCategories = useMemo((): string[] => {
-    return (data.browsing as FlowEntryNode & { allCategories?: string[] })?.allCategories || [];
-  }, [data]);
+    return [];
+  }, []);
 
   // Get subcategories with labels for current category
   const subcategories = useMemo((): { key: string; label: string }[] => {
@@ -164,7 +159,7 @@ export function useFlowNavigation() {
     const subs = currentCategoryNode.subcategories;
     if (!subs) return [];
 
-    // If array of strings (browsing flow)
+    // If array of strings
     if (Array.isArray(subs)) {
       return subs.filter(s => s !== 'load_more').map(s => ({ key: s, label: s }));
     }
@@ -206,18 +201,12 @@ export function useFlowNavigation() {
   }, [currentSubcategoryNode]);
 
   // Determine next step after current
-  const getNextStep = useCallback((current: FlowStep, entryNode: FlowEntryNode | null, entryPoint?: string | null): FlowStep => {
+  const getNextStep = useCallback((current: FlowStep, entryNode: FlowEntryNode | null): FlowStep => {
     switch (current) {
       case 'entry':
-        // For browsing flow, go to first loading screen
-        if (entryPoint === 'browsing') return 'loading_browsing_welcome';
         if (entryNode?.questions?.length) return 'questions';
         if (entryNode?.categories) return 'loading_categories';
         return 'results';
-      case 'loading_browsing_welcome':
-        return 'loading_browsing_data';
-      case 'loading_browsing_data':
-        return 'questions';
       case 'questions':
         if (entryNode?.categories) return 'loading_categories';
         return 'results';
@@ -241,7 +230,7 @@ export function useFlowNavigation() {
   // Select entry point
   const selectEntryPoint = useCallback((entry: string) => {
     const node = data[entry] as FlowEntryNode;
-    const nextStep = getNextStep('entry', node, entry);
+    const nextStep = getNextStep('entry', node);
     const total = calculateTotalSteps(entry);
 
     setState(prev => ({
@@ -332,7 +321,7 @@ export function useFlowNavigation() {
         }));
       } else {
         // Move to next step
-        const nextStep = getNextStep('questions', currentEntryNode, state.entryPoint);
+        const nextStep = getNextStep('questions', currentEntryNode);
         setState(prev => ({
           ...prev,
           questionAnswers: newAnswers,
@@ -343,7 +332,7 @@ export function useFlowNavigation() {
         }));
       }
     }
-  }, [currentQuestion, state.questionAnswers, state.entryPoint, currentEntryNode, getNextStep]);
+  }, [currentQuestion, state.questionAnswers, currentEntryNode, getNextStep]);
 
   // Select category
   const selectCategory = useCallback((category: string) => {
@@ -446,14 +435,14 @@ export function useFlowNavigation() {
     }
 
     // For all other loading screens, just go to next step
-    const nextStep = getNextStep(state.currentStep, currentEntryNode, state.entryPoint);
+    const nextStep = getNextStep(state.currentStep, currentEntryNode);
     setState(prev => ({
       ...prev,
       currentStep: nextStep,
       stepHistory: [...prev.stepHistory, nextStep],
       currentStepNumber: prev.currentStepNumber + 1,
     }));
-  }, [state.currentStep, state.entryPoint, currentEntryNode, getNextStep]);
+  }, [state.currentStep, currentEntryNode, getNextStep]);
 
   // Reset flow
   const resetFlow = useCallback(() => {

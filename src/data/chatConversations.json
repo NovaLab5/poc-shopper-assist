@@ -31,61 +31,37 @@
         {
           "role": "assistant",
           "content": "Got it! A quality charcoal grill under $400 from a great brand - that's a fantastic budget for an excellent grill!\n\nLet me search for the best deals...",
+          "triggerLoading": true
+        },
+        {
+          "role": "assistant",
+          "content": "",
           "showProducts": true,
           "products": [
             {
               "id": "grill-1",
-              "name": "Weber Original Kettle Premium 22\"",
-              "price": 189,
+              "name": "SnS Grills MasterKettle Charcoal Grill",
+              "price": 479,
               "store": "Amazon",
-              "image": "https://m.media-amazon.com/images/I/71dY-VdXOGL._AC_SL1500_.jpg",
-              "rating": 4.8,
-              "url": "https://www.amazon.com/s?k=weber+original+kettle+premium+22"
-            },
+              "image": "https://m.media-amazon.com/images/I/816bFJlSk3L._AC_SL1500_.jpg",
+              "rating": 4.5,
+              "url": "https://www.amazon.com/dp/B0D6SQRCC1/ref=sspa_dk_detail_4?pf_rd_p=386c274b-4bfe-4421-9052-a1a56db557ab&pf_rd_r=27NTFP1J5PPYGXWXDGZG&pd_rd_wg=pdrZ8&pd_rd_w=DMqYe&content-id=amzn1.sym.386c274b-4bfe-4421-9052-a1a56db557ab&pd_rd_r=188506d0-f714-42d4-83d9-46b7ad98c634&sp_csd=d2lkZ2V0TmFtZT1zcF9kZXRhaWxfdGhlbWF0aWM&th=1"
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "content": "Second Premium Option",
+          "showProducts": true,
+          "products": [
             {
               "id": "grill-2",
-              "name": "Char-Griller E1515 Patio Pro",
-              "price": 169,
-              "store": "Home Depot",
-              "image": "https://m.media-amazon.com/images/I/81Nh7S7BFPL._AC_SL1500_.jpg",
-              "rating": 4.5,
-              "url": "https://www.homedepot.com/s/char-griller+patio+pro"
-            },
-            {
-              "id": "grill-3",
-              "name": "Royal Gourmet CD1824A Charcoal",
-              "price": 199,
-              "store": "Walmart",
-              "image": "https://m.media-amazon.com/images/I/81MnV4jrXcL._AC_SL1500_.jpg",
-              "rating": 4.6,
-              "url": "https://www.walmart.com/search?q=royal+gourmet+charcoal+grill"
-            },
-            {
-              "id": "grill-4",
-              "name": "Weber Master-Touch Charcoal 22\"",
-              "price": 359,
+              "name": "Sophia & William Extra Large Charcoal BBQ Grills",
+              "price": 360,
               "store": "Amazon",
-              "image": "https://m.media-amazon.com/images/I/71YlH1lVHxL._AC_SL1500_.jpg",
-              "rating": 4.9,
-              "url": "https://www.amazon.com/s?k=weber+master+touch+charcoal+22"
-            },
-            {
-              "id": "grill-5",
-              "name": "Napoleon Charcoal Kettle Grill",
-              "price": 299,
-              "store": "Amazon",
-              "image": "https://m.media-amazon.com/images/I/71Qf5dGrURL._AC_SL1500_.jpg",
-              "rating": 4.7,
-              "url": "https://www.amazon.com/s?k=napoleon+charcoal+kettle+grill"
-            },
-            {
-              "id": "grill-6",
-              "name": "Oklahoma Joe's Highland Smoker",
-              "price": 349,
-              "store": "Lowes",
-              "image": "https://m.media-amazon.com/images/I/71ZfGwHy69L._AC_SL1500_.jpg",
-              "rating": 4.6,
-              "url": "https://www.lowes.com/search?searchTerm=oklahoma+joe+highland"
+              "image": "https://m.media-amazon.com/images/I/71ZGUHxllJL._AC_SL1500_.jpg",
+              "rating": 4.8,
+              "url": "https://www.amazon.com/Sophia-William-Heavy-duty-Individual-Adjustable/dp/B0B4CB6W9R/ref=sr_1_17_sspa?crid=NZ7R47XJ4PRZ&dib=eyJ2IjoiMSJ9.X8iVI019nsJ4XvbswApwREN_oAIpn0SNIoqkadOj90jaTVSBMdX0Jz6i0XraK-vNnHlgMKVBLQm2Ao-YC-vZWh7bErOMQosFYfMnxry4jXgbX22Xu60BVJ9eEAQdyQSFSz8vPSE7Zwhk78fJUdq1IMGVwv_VrG2ujwz7ASMSgisBp4d4NxaBUKLx5oiaIPozIxh1MQ2Fc-dnwwrTwzm_UIa0Xiw4XFqZYgmVkTO1tYI.SJVLNxDRt0bZL6GfyVRYDSlByUwjsJYS6owCucp-4RI&dib_tag=se&keywords=charcoal%2Bgrill&qid=1767482635&sprefix=charcoal%2Bgril%2Caps%2C240&sr=8-17-spons&xpid=fl-kMGuS_Ugmy&sp_csd=d2lkZ2V0TmFtZT1zcF9hdGZfbmV4dA&th=1"
             }
           ]
         }

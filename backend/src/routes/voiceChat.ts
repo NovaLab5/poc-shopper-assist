@@ -1,31 +1,48 @@
 import express from 'express';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { Conversation } from '../models/Conversation.js';
+import Persona from '../models/Persona.js';
 
 const router = express.Router();
 
-const SYSTEM_PROMPT = `You are a friendly shopping assistant for Sour Dillmas gift shopping app. Your name is Dilly.
+/**
+ * Build system prompt with dynamic persona data from database
+ */
+async function buildSystemPrompt(userName: string): Promise<string> {
+  // Fetch all personas from database
+  const personas = await Persona.find().sort({ updatedAt: -1 });
+
+  // Build personas database section
+  let personasSection = '';
+  if (personas.length > 0) {
+    personasSection = '\n\nKNOWN PERSONAS DATABASE:\n';
+    personas.forEach(persona => {
+      const interests = persona.interests.join(', ');
+      let personaInfo = `- ${persona.name} (${persona.type}): ${persona.age}-year-old ${persona.gender}, loves ${interests}.`;
+
+      if (persona.lastPurchase) {
+        personaInfo += ` Previously bought them ${persona.lastPurchase.item} for ${persona.lastPurchase.occasion}.`;
+      }
+
+      personasSection += personaInfo + '\n';
+    });
+  }
+
+  return `You are a friendly shopping assistant for Sour Dillmas gift shopping app. Your name is Dilly.
 
 USER PROFILE:
-- Name: Paul
-- Age: 42
-- Gender: Male
-- Face shape: Oval
+- Name: ${userName}
 
-KNOWN FRIENDS DATABASE:
-- James: 35-year-old male, loves cooking/grilling and technology/watches. Previously bought him a charcoal grill for his housewarming when he bought his new house.
-- Jessica: 28-year-old female, loves fashion, yoga, and cooking.
-- Eugene: 42-year-old male, loves gaming, tech gadgets, and music.
-
+${personasSection}
 CONVERSATION FLOW - FOLLOW EXACTLY:
 
-STEP 1: User mentions buying for a friend
+STEP 1: User mentions buying for someone (mother, father, friend, etc.)
 → Response: "That's wonderful! Is this someone I know? What's their name?"
 → DO NOT add [SHOW_PRODUCTS]
 
-STEP 2: User provides friend's name
-→ If friend is in database: Acknowledge and ask "What's the occasion?"
-→ If friend is NOT in database: Ask for their age, gender, and interests
+STEP 2: User provides person's name or type (e.g., "my mother", "James")
+→ If person is in KNOWN PERSONAS DATABASE: Acknowledge warmly and mention what you know about them, then ask "What's the occasion?"
+→ If person is NOT in database: Ask for their relationship (mother/father/friend), age, gender, and interests
 → DO NOT add [SHOW_PRODUCTS]
 
 STEP 3: User provides occasion
@@ -33,8 +50,8 @@ STEP 3: User provides occasion
 → DO NOT add [SHOW_PRODUCTS]
 
 STEP 4: User provides budget and asks for suggestion
-→ Response: Suggest product category based on their interests and past purchases
-→ Example: "Since you already bought him a grill, and he loves technology and watches, how about an Apple Watch?"
+→ Response: Suggest product category based on their interests and past purchases from KNOWN PERSONAS DATABASE
+→ Example: "Since you already bought them a grill, and they love technology and watches, how about an Apple Watch?"
 → DO NOT add [SHOW_PRODUCTS] yet
 
 STEP 5: User confirms interest in the suggested category
@@ -43,17 +60,50 @@ STEP 5: User confirms interest in the suggested category
 → DO NOT add [SHOW_PRODUCTS] yet
 
 STEP 6: After user confirms, prepare to show products
-→ Response: "Great! I think we can find a great [category] for [friend name], within your budget. Let me show you some options." + [SHOW_PRODUCTS:category_name]
+→ Response: "Great! I think we can find a great [category] for [person name], within your budget. Let me show you some options." + [SHOW_PRODUCTS:category_name]
 → NOW add [SHOW_PRODUCTS:category_name]
 
-PRODUCT CATEGORIES:
-- apple_watch: Apple Watch options
-- sunglasses: Sunglasses/eyewear
-- grill: BBQ grills
-- headphones: Headphones/earbuds
-- gaming: Gaming accessories
+PRODUCT CATEGORIES (use exact category ID in [SHOW_PRODUCTS:category_id]):
+- grills: BBQ grills and outdoor cooking
+- laptops: Laptops and notebooks
+- headphones: Headphones and earbuds
+- smartphones: Smartphones and mobile devices
+- tv: Televisions and displays
+- camera: Cameras and photography equipment
+- watches: Watches and smartwatches
+- socks: Socks and hosiery
+- pajamas: Pajamas and sleepwear
+- board-games: Board games and tabletop games
+- running-gear: Running and athletic gear
+- travel-gear-and-accessories: Travel gear and accessories
+- home-office-furniture-and-supplies: Home office furniture and supplies
+- luxurious-gifts: Luxury gifts and premium items
+- anniversary-gifts: Anniversary gifts
+- retirement-gifts: Retirement gifts
+- self-care-gifts-for-yourself: Self-care and wellness gifts
+- 25-kids-birthday-party-favors: Kids party favors and gifts
+- college-dorm-essentials: College dorm essentials
+- tinned-fish: Tinned fish and gourmet seafood
 
-Start each conversation by greeting Paul warmly.`;
+Start each conversation by greeting the user warmly.`;
+}
+
+/**
+ * Extract and save persona information from conversation
+ * This helps capture personas mentioned during voice chat
+ */
+async function extractAndSavePersona(conversationText: string): Promise<void> {
+  // Simple pattern matching for persona information
+  // In production, you might use NLP or more sophisticated extraction
+
+  // Example patterns:
+  // "My mother is 65 years old"
+  // "She loves gardening and cooking"
+  // "He's into gaming and tech"
+
+  // This is a placeholder - you can enhance this with better NLP
+  // For now, personas will be saved through the Browse & Select interface
+}
 
 /**
  * POST /api/v1/voice-chat
@@ -71,8 +121,8 @@ router.post('/', async (req, res) => {
     const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
 
-    // Create dynamic system prompt with user's name
-    const dynamicSystemPrompt = SYSTEM_PROMPT.replace(/Paul/g, userName || 'there');
+    // Build dynamic system prompt with personas from database
+    const dynamicSystemPrompt = await buildSystemPrompt(userName || 'there');
 
     // Build chat messages
     const chatMessages = [

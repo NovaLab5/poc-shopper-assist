@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ChatInterface } from '@/components/enhance/ChatInterface';
 import { VoiceInterface } from '@/components/enhance/VoiceInterface';
-import { BrowseInterface } from '@/components/enhance/BrowseInterface';
+import { BrowseSelectInterface } from '@/components/enhance/BrowseSelectInterface';
 import { LoginScreen } from '@/components/LoginScreen';
 import { X, MessageSquare, Mic, List, LogOut } from 'lucide-react';
 import sourDillmasLogo from '@/assets/sour-dillmas-logo.png';
@@ -35,6 +35,7 @@ export function MobileAppContent() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userEmail, setUserEmail] = useState('');
   const [enhanceMode, setEnhanceMode] = useState<EnhanceMode>('menu');
+  const [autoStartVoice, setAutoStartVoice] = useState(false);
 
   // Functions to manage persisted chat state
   const getChatState = () => ({
@@ -119,19 +120,6 @@ export function MobileAppContent() {
                 <p className="text-xs text-muted-foreground">Pick from categories</p>
               </div>
             </button>
-
-            <button
-              onClick={() => setEnhanceMode('voice')}
-              className="flex items-center gap-3 p-3 bg-gradient-to-r from-primary/10 to-primary/5 hover:from-primary/15 hover:to-primary/10 rounded-xl border border-primary/20 transition-all text-left group"
-            >
-              <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0 group-hover:bg-primary/30 transition-colors">
-                <Mic className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <h3 className="font-medium text-foreground text-sm">Talk to me</h3>
-                <p className="text-xs text-muted-foreground">Voice conversation</p>
-              </div>
-            </button>
           </div>
         </div>
       </div>
@@ -146,17 +134,23 @@ export function MobileAppContent() {
   };
 
   const handleVoiceReset = () => {
+    setAutoStartVoice(false);
     setEnhanceMode('menu');
+  };
+
+  const handleSwitchToVoice = () => {
+    setAutoStartVoice(true);
+    setEnhanceMode('voice');
   };
 
   const renderEnhanceContent = () => {
     switch (enhanceMode) {
       case 'chat':
-        return <ChatInterface onBack={() => setEnhanceMode('menu')} getChatState={getChatState} setChatState={setChatState} onReset={handleChatReset} />;
+        return <ChatInterface onBack={() => setEnhanceMode('menu')} getChatState={getChatState} setChatState={setChatState} onReset={handleChatReset} onSwitchToVoice={handleSwitchToVoice} />;
       case 'voice':
-        return <VoiceInterface onBack={() => setEnhanceMode('menu')} userName={userName} onReset={handleVoiceReset} />;
+        return <VoiceInterface onBack={() => setEnhanceMode('menu')} userName={userName} onReset={handleVoiceReset} autoStart={autoStartVoice} />;
       case 'browse':
-        return <BrowseInterface onBack={() => setEnhanceMode('menu')} userName={userName} />;
+        return <BrowseSelectInterface onBack={() => setEnhanceMode('menu')} userName={userName} />;
       default:
         return renderEnhanceMenu();
     }
@@ -191,7 +185,7 @@ export function MobileAppContent() {
       </header>
 
       {/* Content */}
-      <main className="flex-1 -mt-5 overflow-hidden px-4 pt-4">
+      <main className="flex-1 -mt-5 overflow-hidden px-4 pt-4 flex flex-col">
         {renderEnhanceContent()}
       </main>
     </div>

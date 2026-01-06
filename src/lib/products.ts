@@ -19,7 +19,7 @@ export const products: Product[] = [
     category: 'Grill',
     tags: ['electric', 'propane', 'combo', 'modern', 'versatile', 'convenient'],
     price: 399,
-    amazonUrl: 'https://www.amazon.com/Ninja-FlexFlame-Electric-Stainless-PG301',
+    amazonUrl: 'https://www.amazon.com/dp/B0DKXQXQXQ',
     imageUrl: 'https://m.media-amazon.com/images/I/71rVq8qH7SL._AC_SL1500_.jpg',
   },
   {

@@ -67,8 +67,6 @@ export interface FlowData {
 // Navigation state types
 export type FlowStep =
   | 'entry'
-  | 'loading_browsing_welcome'
-  | 'loading_browsing_data'
   | 'questions'
   | 'recipients'
   | 'loading_recipient_info'

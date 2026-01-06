@@ -6,6 +6,9 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import voiceChatRouter from './routes/voiceChat.js';
 import ttsRouter from './routes/tts.js';
+import sttRouter from './routes/stt.js';
+import personaRouter from './routes/persona.js';
+import productRouter from './routes/product.js';
 
 // Get directory name in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -26,7 +29,8 @@ app.use(cors({
   credentials: true,
 }));
 
-app.use(express.json());
+// Increase body size limit for audio files (default is 100kb)
+app.use(express.json({ limit: '10mb' }));
 
 /**
  * Health check endpoint
@@ -44,6 +48,10 @@ app.get('/health', (req, res) => {
  */
 app.use('/api/v1/voice-chat', voiceChatRouter);
 app.use('/api/v1/tts', ttsRouter);
+app.use('/api/v1/stt', sttRouter);
+app.use('/api/v1/personas', personaRouter);
+app.use('/api/v1/products', productRouter);
+app.use('/api/v1/products', productRouter);
 
 /**
  * Error handling middleware
