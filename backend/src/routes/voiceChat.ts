@@ -59,8 +59,11 @@ STEP 3: User provides occasion
 → DO NOT add [SHOW_PRODUCTS]
 
 STEP 4: User provides budget and asks for suggestion
-→ Response: Suggest product category based on their interests and past purchases from KNOWN PERSONAS DATABASE
-→ Example: "Since you already bought them a grill, and they love technology and watches, how about an Apple Watch?"
+→ Response: Suggest product category based on their interests from KNOWN PERSONAS DATABASE
+→ IMPORTANT: Look at the persona's interests from the database and suggest something they would like
+→ Example: "Based on their love for [interest1] and [interest2], how about [suggested category]?"
+→ Keep it simple and natural - just mention their interests and suggest a category
+→ DO NOT mention previous purchases unless you are 100% certain they exist in the database
 → DO NOT add [SHOW_PRODUCTS] yet
 
 STEP 5: User confirms interest in the suggested category
@@ -107,28 +110,24 @@ async function extractAndSavePersona(aiResponse: string, userMessage: string): P
     const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY!);
     const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
 
-    const extractionPrompt = `Analyze this conversation and extract persona information if present.
+    const extractionPrompt = `Extract persona information from this conversation.
 
-User said: "${userMessage}"
-Assistant said: "${aiResponse}"
+User: "${userMessage}"
+Assistant: "${aiResponse}"
 
-If the user provided information about a person (name, age, gender, interests, relationship), extract it in this EXACT JSON format:
+Return JSON in this format:
 {
   "hasPersona": true,
-  "type": "friend" or "mother" or "father" or "brother" or "sister",
-  "name": "person's name",
-  "age": number,
-  "gender": "male" or "female" or "other",
-  "interests": ["interest1", "interest2"]
+  "type": "wife" | "husband" | "mother" | "father" | "friend" | "brother" | "sister" | "partner" | "girlfriend" | "boyfriend" | "son" | "daughter" | "cousin" | "aunt" | "uncle" | "grandmother" | "grandfather",
+  "name": string | null,
+  "age": number | null,
+  "gender": "male" | "female" | "other" | null,
+  "interests": string[]
 }
 
-If NO persona information is present, return:
-{
-  "hasPersona": false
-}
+Or if no persona: {"hasPersona": false}
 
-IMPORTANT: Only extract if the user explicitly provided this information. Do not make assumptions.
-Return ONLY valid JSON, no other text.`;
+Return ONLY valid JSON.`;
 
     const result = await model.generateContent(extractionPrompt);
     const responseText = result.response.text().trim();
@@ -137,39 +136,103 @@ Return ONLY valid JSON, no other text.`;
     const jsonText = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
 
     const extracted = JSON.parse(jsonText);
+    console.log('🔍 Persona extraction result:', JSON.stringify(extracted, null, 2));
 
-    if (extracted.hasPersona && extracted.name && extracted.age && extracted.gender) {
-      // Check if persona already exists
-      const existingPersona = await Persona.findOne({
-        type: extracted.type,
-        name: extracted.name
-      });
+    if (extracted.hasPersona && extracted.type) {
+      // Validate and sanitize gender field
+      const validGenders = ['male', 'female', 'other'];
+      let sanitizedGender = 'other';
+
+      if (extracted.gender && typeof extracted.gender === 'string') {
+        const genderLower = extracted.gender.toLowerCase().trim();
+        if (validGenders.includes(genderLower)) {
+          sanitizedGender = genderLower;
+        } else {
+          console.log(`⚠️ Invalid gender value "${extracted.gender}" - using "other" as default`);
+          // If it looks like interests were put in gender field, move them to interests
+          if (extracted.gender.includes(',') || extracted.gender.includes('and')) {
+            console.log(`   Moving "${extracted.gender}" to interests field`);
+            const additionalInterests = extracted.gender.split(/[,\s]+and\s+|,\s*/).map((s: string) => s.trim()).filter((s: string) => s);
+            extracted.interests = [...(extracted.interests || []), ...additionalInterests];
+          }
+        }
+      }
+
+      // Use defaults for missing fields
+      const personaName = extracted.name || `My ${extracted.type}`;
+      const personaAge = extracted.age || 30; // Default age
+      const personaGender = sanitizedGender;
+      const personaInterests = extracted.interests || [];
+
+      // For relationship types (wife, husband, etc), find by type only
+      // For friends, find by both type and name
+      let existingPersona;
+      if (extracted.type === 'friend' && extracted.name) {
+        existingPersona = await Persona.findOne({
+          type: extracted.type,
+          name: extracted.name
+        });
+      } else {
+        // For wife, husband, mother, father, etc - only one per type
+        existingPersona = await Persona.findOne({
+          type: extracted.type
+        });
+      }
 
       if (!existingPersona) {
-        // Create new persona
+        // Create new persona with available information
         const newPersona = new Persona({
           type: extracted.type,
-          name: extracted.name,
-          age: extracted.age,
-          gender: extracted.gender.toLowerCase(),
-          interests: extracted.interests || []
+          name: personaName,
+          age: personaAge,
+          gender: personaGender,
+          interests: personaInterests
         });
 
         await newPersona.save();
-        console.log(`✅ Auto-saved new persona: ${extracted.name} (${extracted.type})`);
+        console.log(`✅ Auto-saved new persona: ${personaName} (${extracted.type})`);
+        if (!extracted.name || !extracted.age || !extracted.gender) {
+          console.log(`   ℹ️ Used defaults for missing fields - will update when more info is provided`);
+        }
       } else {
         // Update existing persona with new information
-        if (extracted.interests && extracted.interests.length > 0) {
-          existingPersona.interests = [...new Set([...existingPersona.interests, ...extracted.interests])];
+        let updated = false;
+
+        if (extracted.name && extracted.name !== existingPersona.name) {
+          existingPersona.name = extracted.name;
+          updated = true;
         }
-        existingPersona.age = extracted.age;
-        existingPersona.gender = extracted.gender.toLowerCase();
-        await existingPersona.save();
-        console.log(`✅ Updated existing persona: ${extracted.name} (${extracted.type})`);
+
+        if (extracted.age && extracted.age !== existingPersona.age) {
+          existingPersona.age = extracted.age;
+          updated = true;
+        }
+
+        if (extracted.gender && extracted.gender.toLowerCase() !== existingPersona.gender) {
+          existingPersona.gender = extracted.gender.toLowerCase();
+          updated = true;
+        }
+
+        if (extracted.interests && extracted.interests.length > 0) {
+          const newInterests = [...new Set([...existingPersona.interests, ...extracted.interests])];
+          if (newInterests.length > existingPersona.interests.length) {
+            existingPersona.interests = newInterests;
+            updated = true;
+          }
+        }
+
+        if (updated) {
+          await existingPersona.save();
+          console.log(`✅ Updated existing persona: ${existingPersona.name} (${extracted.type})`);
+        } else {
+          console.log(`ℹ️ Persona ${existingPersona.name} already up to date`);
+        }
       }
+    } else {
+      console.log('ℹ️ No persona information found in this message');
     }
   } catch (error) {
-    console.error('Error extracting persona:', error);
+    console.error('❌ Error extracting persona:', error);
     // Don't throw - this is a background task
   }
 }

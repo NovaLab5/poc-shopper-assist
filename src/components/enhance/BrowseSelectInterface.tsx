@@ -1,15 +1,18 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Search, Flame, Watch, Loader2, Check, User, Users, RotateCcw, Smartphone, Laptop, Headphones, Camera, Tv, Home, Shirt, Dumbbell, Book, Utensils, Gem, Sparkles } from 'lucide-react';
+import { ArrowLeft, Search, Flame, Watch, Loader2, Check, User, Users, RotateCcw, Smartphone, Laptop, Headphones, Camera, Tv, Home, Shirt, Dumbbell, Book, Utensils, Gem, Sparkles, Star, TrendingUp, TrendingDown, Trash2, Edit2, ChevronDown } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import { useFlowNavigation } from '@/hooks/useFlowNavigation';
+import { usePersona } from '@/hooks/usePersona';
 import { EntryPointScreen } from '@/components/flow/EntryPointScreen';
 import { SingleQuestionScreen } from '@/components/flow/SingleQuestionScreen';
 import { SelectionScreen } from '@/components/flow/SelectionScreen';
 import { PreferenceScreen } from '@/components/flow/PreferenceScreen';
 import { ResultsScreen } from '@/components/flow/ResultsScreen';
 import { LoadingScreen } from '@/components/flow/LoadingScreen';
+import { ProductResultsDisplay, type ProductItem } from '@/components/shared/ProductResultsDisplay';
+import { ProductSearchLoadingScreen } from '@/components/shared/ProductSearchLoadingScreen';
 import sourDillLogo from '@/assets/sour-dillmas-logo.png';
-import { getPersonaByType, savePersona, getPersonasByType, type Persona } from '@/services/personaService';
+import { getPersonasByType, type Persona } from '@/services/personaService';
 import { getProductsByCategory, transformProductsForComponent, getCategoryPriceRange } from '@/services/productService';
 
 interface BrowseSelectInterfaceProps {
@@ -84,9 +87,7 @@ export function BrowseSelectInterface({ onBack, userName }: BrowseSelectInterfac
   const [priceRange, setPriceRange] = useState<{ min: number; max: number }>({ min: 50, max: 1000 });
   const [priceRangeCache, setPriceRangeCache] = useState<Record<string, { min: number; max: number }>>({});
   const [products, setProducts] = useState<Product[]>([]);
-  const [loadingStep, setLoadingStep] = useState(0);
   const [visibleProductCount, setVisibleProductCount] = useState(1);
-  const [randomNumbers, setRandomNumbers] = useState({ resources: 0, reviews: 0 });
 
   // "Others" flow state
   const [othersStep, setOthersStep] = useState<OthersFlowStep>('entry');
@@ -99,16 +100,25 @@ export function BrowseSelectInterface({ onBack, userName }: BrowseSelectInterfac
   const [othersCategory, setOthersCategory] = useState<string>('');
   const [othersOccasion, setOthersOccasion] = useState<string>('');
 
-  // Current persona from database
-  const [currentPersona, setCurrentPersona] = useState<Persona | null>(null);
-
   // Friend selection state
   const [friendsList, setFriendsList] = useState<Persona[]>([]);
   const [friendSearchQuery, setFriendSearchQuery] = useState<string>('');
+  const [showAllFriends, setShowAllFriends] = useState<boolean>(false);
+  const [editingFriend, setEditingFriend] = useState<Persona | null>(null);
 
   // Separate search queries for category and occasion
   const [categorySearchQuery, setCategorySearchQuery] = useState<string>('');
   const [occasionSearchQuery, setOccasionSearchQuery] = useState<string>('');
+
+  // Use centralized persona hook
+  const {
+    currentPersona,
+    isLoading: personaLoading,
+    loadPersona,
+    savePersona: savePersonaHook,
+    clearPersona,
+    isUniqueType
+  } = usePersona();
 
   const { entryPoints } = useFlowNavigation();
 
@@ -164,7 +174,7 @@ export function BrowseSelectInterface({ onBack, userName }: BrowseSelectInterfac
             }));
           }
         } catch (error) {
-          console.error(`Error pre-fetching price range for ${categoryId}:`, error);
+          // Silently fail - will use defaults
         }
       }
     };
@@ -215,8 +225,6 @@ export function BrowseSelectInterface({ onBack, userName }: BrowseSelectInterfac
         setBudget(500);
       }
     } catch (error) {
-      console.error('Error fetching price range:', error);
-      // Use defaults on error
       setPriceRange({ min: 50, max: 1000 });
       setBudget(500);
     }
@@ -390,30 +398,7 @@ export function BrowseSelectInterface({ onBack, userName }: BrowseSelectInterfac
   // Handle results loading with useEffect for "Myself" flow
   useEffect(() => {
     if (myselfStep === 'results_loading') {
-      // Generate random numbers once at the start
-      const randomResources = Math.floor(Math.random() * (37 - 19 + 1)) + 19;
-      const randomReviews = Math.floor(Math.random() * (9 - 3 + 1)) + 3;
-      setRandomNumbers({ resources: randomResources, reviews: randomReviews });
-
-      const steps = [
-        { duration: 1333 },
-        { duration: 1333 },
-        { duration: 1333 },
-        { duration: 1333 },
-        { duration: 1333 },
-        { duration: 1333 },
-      ];
-
-      const timers: NodeJS.Timeout[] = [];
-
-      steps.forEach((step, index) => {
-        const timer = setTimeout(() => {
-          setLoadingStep(index + 1);
-        }, step.duration * (index + 1));
-        timers.push(timer);
-      });
-
-      const finalTimer = setTimeout(async () => {
+      const timer = setTimeout(async () => {
         // Load products from API
         try {
           const apiProducts = await getProductsByCategory(selectedCategory, budget);
@@ -424,57 +409,50 @@ export function BrowseSelectInterface({ onBack, userName }: BrowseSelectInterfac
 
           setProducts(sorted);
         } catch (error) {
-          console.error('Error loading products:', error);
           setProducts([]);
         }
         setMyselfStep('results');
-        setLoadingStep(0);
         setVisibleProductCount(1); // Reset to show only first product
       }, 8000);
-      timers.push(finalTimer);
 
-      return () => timers.forEach(timer => clearTimeout(timer));
+      return () => clearTimeout(timer);
     }
   }, [myselfStep, selectedCategory, budget]);
 
-  // ALWAYS refresh friends list when entering friend selection - no caching
   useEffect(() => {
     if (personaType === 'friend' && othersStep === 'loading_checking_data') {
       const refreshFriends = async () => {
-        console.log('🔄 Refreshing friends list from database...');
         const friends = await getPersonasByType('friend');
-        console.log(`✅ Loaded ${friends.length} friends:`, friends.map(f => f.name));
         setFriendsList(friends);
       };
       refreshFriends();
     }
   }, [personaType, othersStep]);
 
-  // Handle loading screens for "Others" flow
   useEffect(() => {
     if (othersStep === 'loading_checking_data') {
       const checkPersona = async () => {
-        // For friends, fetch all friends and show selection page
         if (personaType === 'friend') {
           const friends = await getPersonasByType('friend');
-          console.log('Fetched friends:', friends);
           setFriendsList(friends);
           setOthersStep('select_friend');
           return;
         }
 
-        // For other personas (mother, father, etc.), check if exists
-        const persona = await getPersonaByType(personaType);
-        if (persona) {
-          setCurrentPersona(persona);
-          setOthersStep('loading_found_persona');
-          return;
-        }
+        const result = await loadPersona(personaType);
 
-        setOthersStep('loading_no_info');
+        if (result.found && result.persona) {
+          setPersonaName(result.persona.name);
+          setPersonaAge(result.persona.age);
+          setPersonaGender(result.persona.gender);
+          setPersonaInterests(result.persona.interests);
+          setOthersStep('loading_found_persona');
+        } else {
+          setOthersStep('loading_no_info');
+        }
       };
 
-      const timer = setTimeout(checkPersona, 3500);
+      const timer = setTimeout(checkPersona, 1500); // Reduced from 3500ms to 1500ms for faster UX
       return () => clearTimeout(timer);
     }
   }, [othersStep, personaType]);
@@ -518,29 +496,7 @@ export function BrowseSelectInterface({ onBack, userName }: BrowseSelectInterfac
   // Handle results loading for "Others" flow
   useEffect(() => {
     if (othersStep === 'results_loading') {
-      const randomResources = Math.floor(Math.random() * (37 - 19 + 1)) + 19;
-      const randomReviews = Math.floor(Math.random() * (9 - 3 + 1)) + 3;
-      setRandomNumbers({ resources: randomResources, reviews: randomReviews });
-
-      const steps = [
-        { duration: 1333 },
-        { duration: 1333 },
-        { duration: 1333 },
-        { duration: 1333 },
-        { duration: 1333 },
-        { duration: 1333 },
-      ];
-
-      const timers: NodeJS.Timeout[] = [];
-
-      steps.forEach((step, index) => {
-        const timer = setTimeout(() => {
-          setLoadingStep(index + 1);
-        }, step.duration * (index + 1));
-        timers.push(timer);
-      });
-
-      const finalTimer = setTimeout(async () => {
+      const timer = setTimeout(async () => {
         // Load products from API
         try {
           const apiProducts = await getProductsByCategory(othersCategory, othersBudget);
@@ -555,143 +511,52 @@ export function BrowseSelectInterface({ onBack, userName }: BrowseSelectInterfac
           setProducts([]);
         }
         setOthersStep('results');
-        setLoadingStep(0);
         setVisibleProductCount(1);
       }, 8000);
-      timers.push(finalTimer);
 
-      return () => timers.forEach(timer => clearTimeout(timer));
+      return () => clearTimeout(timer);
     }
   }, [othersStep, othersCategory, othersBudget]);
 
   const renderResultsLoading = () => {
-    const categoryLabel = CATEGORIES.find(cat => cat.id === selectedCategory)?.label || 'products';
+    const categoryLabel = CATEGORIES.find(cat => cat.id === selectedCategory)?.label ||
+                          CATEGORIES.find(cat => cat.id === othersCategory)?.label ||
+                          'products';
 
-    const steps = [
-      { icon: '🔍', text: `Checking ${randomNumbers.resources} resources for ${categoryLabel}` },
-      { icon: '⭐', text: `Checking ${randomNumbers.reviews} customer reviews` },
-      { icon: '💰', text: 'Finding the best deals' },
-      { icon: '📊', text: 'Evaluating product attributes' },
-      { icon: '💵', text: 'Comparing prices' },
-      { icon: '↩️', text: 'Checking return rates' },
-    ];
-
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] px-6 py-8">
-        <div className="relative mb-6">
-          <div className="absolute inset-0 w-20 h-20 rounded-full bg-primary/20 animate-ping" />
-          <div className="absolute inset-0 w-20 h-20 rounded-full bg-primary/30 animate-pulse" />
-          <div className="relative w-20 h-20 rounded-full bg-card shadow-lg flex items-center justify-center animate-bounce border-2 border-primary/30" style={{ animationDuration: '1.5s' }}>
-            <img src={sourDillLogo} alt="Sweet Dill" className="w-14 h-14 object-contain" />
-          </div>
-        </div>
-
-        <div className="w-full max-w-md mx-auto space-y-3">
-          {steps.map((step, index) => (
-            <div
-              key={index}
-              className="flex items-center justify-start gap-2.5 animate-fade-in"
-              style={{ animationDelay: `${index * 100}ms` }}
-            >
-              <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-all duration-300 ${
-                loadingStep > index ? 'bg-primary text-primary-foreground' : 'border-2 border-muted-foreground/30'
-              }`}>
-                {loadingStep > index && <Check className="w-4 h-4" />}
-              </div>
-              <p className={`text-sm transition-colors duration-300 ${
-                loadingStep > index ? 'text-foreground font-medium' : 'text-muted-foreground'
-              }`}>
-                {step.text}
-              </p>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
+    return <ProductSearchLoadingScreen category={categoryLabel} duration={8000} />;
   };
 
   const renderResults = () => {
     const visibleProducts = products.slice(0, visibleProductCount);
-    const hasMoreProducts = visibleProductCount < products.length;
-    const showListView = visibleProductCount > 2; // Show list after 2nd product
+    // Convert products to ProductItem format
+    const productItems: ProductItem[] = products.map(p => ({
+      id: p.id,
+      name: p.name,
+      price: p.price,
+      store: p.store,
+      image: p.image,
+      rating: p.rating,
+      url: p.url
+    }));
 
     return (
-      <div className="space-y-4 animate-fade-in px-4 py-6">
-        <div className="text-center space-y-2">
-          <h2 className="text-2xl font-semibold text-foreground">
-            {visibleProductCount === 1 ? 'Premium Deal' : visibleProductCount === 2 ? 'Premium Deals' : 'All Options'}
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            {visibleProductCount === 1
-              ? `Showing the top recommendation`
-              : visibleProductCount === 2
-              ? `Showing top 2 recommendations`
-              : `Showing ${Math.min(visibleProductCount, products.length)} of ${products.length} products`}
-          </p>
-        </div>
-
-        {/* Products - shown one at a time */}
-        <div className="space-y-4 max-w-md mx-auto">
-          {visibleProducts.map((product, index) => (
-            <div key={product.id} className="animate-fade-in">
-              {index > 0 && (
-                <div className="text-center mb-2">
-                  <span className="text-xs font-semibold text-muted-foreground bg-secondary/50 px-3 py-1 rounded-full">
-                    {index === 1 ? '2nd Best' : index === 2 ? '3rd Best' : `${index + 1}th Best`}
-                  </span>
-                </div>
-              )}
-              <a
-                href={product.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="bg-card border border-border/40 rounded-xl p-4 hover:shadow-lg hover:scale-[1.02] transition-all duration-200 cursor-pointer hover:border-primary/60 block group active:scale-[0.98]"
-              >
-                <div className="aspect-square rounded-lg overflow-hidden mb-3 bg-secondary/30 relative">
-                  {product.image ? (
-                    <img
-                      src={product.image}
-                      alt={product.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                      No image
-                    </div>
-                  )}
-                </div>
-
-                <h3 className="font-semibold text-base text-foreground mb-2 line-clamp-2">
-                  {product.name}
-                </h3>
-
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center justify-center">
-                    <span className="text-2xl font-extrabold text-primary bg-primary/15 px-4 py-2 rounded-lg border border-primary/20">
-                      ${product.price}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-center gap-1">
-                    <span className="text-sm text-primary font-semibold">{product.store}</span>
-                  </div>
-                </div>
-              </a>
-            </div>
-          ))}
-        </div>
-
-        {/* Show Next Product Button */}
-        {hasMoreProducts && (
-          <div className="flex justify-center pt-2">
-            <button
-              onClick={handleShowNextProduct}
-              className="px-6 py-3 bg-primary text-primary-foreground rounded-full font-medium hover:bg-primary/90 transition-all shadow-md hover:shadow-lg"
-            >
-              {visibleProductCount === 1 ? 'Second Premium Deal' : 'See More Options'}
-            </button>
-          </div>
-        )}
+      <div className="animate-fade-in px-4 py-6">
+        <ProductResultsDisplay
+          products={productItems}
+          maxBudget={selectedEntryPoint === 'myself' ? budget : othersBudget}
+          onSomethingElse={() => {
+            // Reset to category selection based on which flow is active
+            if (selectedEntryPoint === 'myself') {
+              setMyselfStep('category_budget');
+              setProducts([]);
+              setVisibleProductCount(1);
+            } else if (selectedEntryPoint === 'others') {
+              setOthersStep('ask_preferences');
+              setProducts([]);
+              setVisibleProductCount(1);
+            }
+          }}
+        />
       </div>
     );
   };
@@ -853,10 +718,10 @@ export function BrowseSelectInterface({ onBack, userName }: BrowseSelectInterfac
 
     // Step 3.5: Friend Selection Page (only for friends)
     if (othersStep === 'select_friend') {
-      // Show first 3 friends by default
-      const defaultFriends = friendsList.slice(0, 3);
+      // Show first 3 friends by default, or all if showAllFriends is true
+      const defaultFriends = showAllFriends ? friendsList : friendsList.slice(0, 3);
 
-      // When searching, show matching friends (excluding the default 3 if not searching)
+      // When searching, show matching friends
       const searchResults = friendSearchQuery.trim()
         ? friendsList.filter(friend =>
             friend.name.toLowerCase().includes(friendSearchQuery.toLowerCase())
@@ -873,10 +738,15 @@ export function BrowseSelectInterface({ onBack, userName }: BrowseSelectInterfac
                 Select a Friend
               </h2>
               {friendsList.length > 0 && (
-                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-primary/10 text-primary rounded-full">
+                <button
+                  onClick={() => setShowAllFriends(!showAllFriends)}
+                  className="flex items-center gap-1.5 px-2.5 py-1 bg-primary/10 text-primary rounded-full hover:bg-primary/20 transition-colors cursor-pointer"
+                  title={showAllFriends ? "Show less" : "Show all friends"}
+                >
                   <Users className="w-3.5 h-3.5" />
                   <span className="text-xs font-semibold">{friendsList.length}</span>
-                </div>
+                  <ChevronDown className={`w-3 h-3 transition-transform ${showAllFriends ? 'rotate-180' : ''}`} />
+                </button>
               )}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -887,24 +757,37 @@ export function BrowseSelectInterface({ onBack, userName }: BrowseSelectInterfac
           {/* Show content only if there are friends */}
           {friendsList.length > 0 ? (
             <>
-              {/* Default Friends (first 3) */}
+              {/* Default Friends (first 3 or all) */}
               {!friendSearchQuery.trim() && (
                 <div className="max-w-lg mx-auto space-y-3">
                   {defaultFriends.map((friend) => (
-                    <button
+                    <div
                       key={friend._id}
-                      onClick={() => {
-                        setCurrentPersona(friend);
-                        setPersonaName(friend.name);
-                        setPersonaAge(friend.age);
-                        setPersonaGender(friend.gender);
-                        setPersonaInterests(friend.interests);
-                        setOthersStep('loading_found_persona');
-                      }}
-                      className="w-full p-3.5 bg-card border border-border/50 rounded-lg hover:border-primary/50 hover:shadow-md transition-all duration-200 text-left"
+                      className="w-full bg-card border border-border/50 rounded-lg hover:border-primary/50 hover:shadow-md transition-all duration-200"
                     >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
+                      <div className="flex items-start justify-between gap-3 p-3.5">
+                        <div
+                          onClick={async () => {
+                            // Set persona data in local state
+                            setPersonaName(friend.name);
+                            setPersonaAge(friend.age);
+                            setPersonaGender(friend.gender);
+                            setPersonaInterests(friend.interests);
+
+                            // Save to persona hook (this sets currentPersona internally)
+                            await savePersonaHook({
+                              type: friend.type,
+                              name: friend.name,
+                              age: friend.age,
+                              gender: friend.gender,
+                              interests: friend.interests
+                            });
+
+                            // Navigate to next step
+                            setOthersStep('loading_found_persona');
+                          }}
+                          className="flex-1 cursor-pointer"
+                        >
                           <h3 className="font-semibold text-foreground text-base">{friend.name}</h3>
                           <p className="text-xs text-muted-foreground mt-0.5">
                             {friend.age} years old • {friend.gender}
@@ -922,9 +805,44 @@ export function BrowseSelectInterface({ onBack, userName }: BrowseSelectInterfac
                             </div>
                           )}
                         </div>
-                        <User className="w-4 h-4 text-muted-foreground ml-3" />
+                        <div className="flex flex-col gap-2 flex-shrink-0">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingFriend(friend);
+                            }}
+                            className="p-1.5 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded transition-colors"
+                            title="Edit friend"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              if (confirm(`Are you sure you want to delete ${friend.name}?`)) {
+                                try {
+                                  const response = await fetch(`http://localhost:3001/api/v1/personas/${friend._id}`, {
+                                    method: 'DELETE',
+                                  });
+                                  if (response.ok) {
+                                    // Refresh friends list
+                                    const friends = await getPersonasByType('friend');
+                                    setFriendsList(friends);
+                                  }
+                                } catch (error) {
+                                  console.error('Error deleting friend:', error);
+                                  alert('Failed to delete friend');
+                                }
+                              }
+                            }}
+                            className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded transition-colors"
+                            title="Delete friend"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
-                    </button>
+                    </div>
                   ))}
                 </div>
               )}
@@ -947,20 +865,33 @@ export function BrowseSelectInterface({ onBack, userName }: BrowseSelectInterfac
               {friendSearchQuery.trim() && searchResults.length > 0 && (
                 <div className="max-w-lg mx-auto space-y-3">
                   {searchResults.map((friend) => (
-                    <button
+                    <div
                       key={friend._id}
-                      onClick={() => {
-                        setCurrentPersona(friend);
-                        setPersonaName(friend.name);
-                        setPersonaAge(friend.age);
-                        setPersonaGender(friend.gender);
-                        setPersonaInterests(friend.interests);
-                        setOthersStep('loading_found_persona');
-                      }}
-                      className="w-full p-3.5 bg-card border border-border/50 rounded-lg hover:border-primary/50 hover:shadow-md transition-all duration-200 text-left"
+                      className="w-full bg-card border border-border/50 rounded-lg hover:border-primary/50 hover:shadow-md transition-all duration-200"
                     >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
+                      <div className="flex items-start justify-between gap-3 p-3.5">
+                        <div
+                          onClick={async () => {
+                            // Set persona data in local state
+                            setPersonaName(friend.name);
+                            setPersonaAge(friend.age);
+                            setPersonaGender(friend.gender);
+                            setPersonaInterests(friend.interests);
+
+                            // Save to persona hook (this sets currentPersona internally)
+                            await savePersonaHook({
+                              type: friend.type,
+                              name: friend.name,
+                              age: friend.age,
+                              gender: friend.gender,
+                              interests: friend.interests
+                            });
+
+                            // Navigate to next step
+                            setOthersStep('loading_found_persona');
+                          }}
+                          className="flex-1 cursor-pointer"
+                        >
                           <h3 className="font-semibold text-foreground text-base">{friend.name}</h3>
                           <p className="text-xs text-muted-foreground mt-0.5">
                             {friend.age} years old • {friend.gender}
@@ -978,9 +909,44 @@ export function BrowseSelectInterface({ onBack, userName }: BrowseSelectInterfac
                             </div>
                           )}
                         </div>
-                        <User className="w-4 h-4 text-muted-foreground ml-3" />
+                        <div className="flex flex-col gap-2 flex-shrink-0">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingFriend(friend);
+                            }}
+                            className="p-1.5 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded transition-colors"
+                            title="Edit friend"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              if (confirm(`Are you sure you want to delete ${friend.name}?`)) {
+                                try {
+                                  const response = await fetch(`http://localhost:3001/api/v1/personas/${friend._id}`, {
+                                    method: 'DELETE',
+                                  });
+                                  if (response.ok) {
+                                    // Refresh friends list
+                                    const friends = await getPersonasByType('friend');
+                                    setFriendsList(friends);
+                                  }
+                                } catch (error) {
+                                  console.error('Error deleting friend:', error);
+                                  alert('Failed to delete friend');
+                                }
+                              }
+                            }}
+                            className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded transition-colors"
+                            title="Delete friend"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
-                    </button>
+                    </div>
                   ))}
                 </div>
               )}
@@ -1024,6 +990,117 @@ export function BrowseSelectInterface({ onBack, userName }: BrowseSelectInterfac
               >
                 Add Your First Friend
               </button>
+            </div>
+          )}
+
+          {/* Edit Friend Modal */}
+          {editingFriend && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+              <div className="bg-background rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-6 animate-fade-in">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xl font-semibold text-foreground">Edit Friend</h3>
+                  <button
+                    onClick={() => setEditingFriend(null)}
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  {/* Name */}
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">Name</label>
+                    <input
+                      type="text"
+                      value={editingFriend.name}
+                      onChange={(e) => setEditingFriend({ ...editingFriend, name: e.target.value })}
+                      className="w-full px-4 py-2 rounded-lg border border-border/50 bg-card focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    />
+                  </div>
+
+                  {/* Age */}
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">Age</label>
+                    <input
+                      type="number"
+                      value={editingFriend.age}
+                      onChange={(e) => setEditingFriend({ ...editingFriend, age: parseInt(e.target.value) || 0 })}
+                      className="w-full px-4 py-2 rounded-lg border border-border/50 bg-card focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    />
+                  </div>
+
+                  {/* Gender */}
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">Gender</label>
+                    <select
+                      value={editingFriend.gender}
+                      onChange={(e) => setEditingFriend({ ...editingFriend, gender: e.target.value })}
+                      className="w-full px-4 py-2 rounded-lg border border-border/50 bg-card focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    >
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+
+                  {/* Interests */}
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">Interests (comma-separated)</label>
+                    <input
+                      type="text"
+                      value={editingFriend.interests.join(', ')}
+                      onChange={(e) => setEditingFriend({
+                        ...editingFriend,
+                        interests: e.target.value.split(',').map(i => i.trim()).filter(i => i)
+                      })}
+                      className="w-full px-4 py-2 rounded-lg border border-border/50 bg-card focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      placeholder="e.g., Gaming, Reading, Sports"
+                    />
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setEditingFriend(null)}
+                    className="flex-1 px-4 py-2 bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/80 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={async () => {
+                      try {
+                        const response = await fetch(`http://localhost:3001/api/v1/personas/${editingFriend._id}`, {
+                          method: 'PUT',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            type: editingFriend.type,
+                            name: editingFriend.name,
+                            age: editingFriend.age,
+                            gender: editingFriend.gender,
+                            interests: editingFriend.interests,
+                          }),
+                        });
+                        if (response.ok) {
+                          // Refresh friends list
+                          const friends = await getPersonasByType('friend');
+                          setFriendsList(friends);
+                          setEditingFriend(null);
+                        } else {
+                          alert('Failed to update friend');
+                        }
+                      } catch (error) {
+                        console.error('Error updating friend:', error);
+                        alert('Failed to update friend');
+                      }
+                    }}
+                    className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-semibold"
+                  >
+                    Save Changes
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -1230,18 +1307,14 @@ export function BrowseSelectInterface({ onBack, userName }: BrowseSelectInterfac
           <div className="flex justify-center pt-4">
             <button
               onClick={async () => {
-                // Save persona to database
-                const savedPersona = await savePersona({
+                // Save persona using centralized hook
+                await savePersonaHook({
                   type: personaType,
                   name: personaName,
                   age: personaAge,
                   gender: personaGender,
                   interests: personaInterests,
                 });
-
-                if (savedPersona) {
-                  setCurrentPersona(savedPersona);
-                }
 
                 setOthersStep('loading_preparing');
               }}

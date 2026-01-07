@@ -49,6 +49,19 @@ router.post('/', async (req: Request, res: Response) => {
       });
     }
 
+    // Sanitize gender field - must be male, female, or other
+    const validGenders = ['male', 'female', 'other'];
+    let sanitizedGender = 'other';
+
+    if (typeof gender === 'string') {
+      const genderLower = gender.toLowerCase().trim();
+      if (validGenders.includes(genderLower)) {
+        sanitizedGender = genderLower;
+      } else {
+        console.log(`⚠️ Invalid gender value "${gender}" - using "other" as default`);
+      }
+    }
+
     const personaType = type.toLowerCase();
 
     // For friends, always create new (allow multiple friends)
@@ -63,7 +76,7 @@ router.post('/', async (req: Request, res: Response) => {
       if (existingFriend) {
         // Update existing friend
         existingFriend.age = age;
-        existingFriend.gender = gender.toLowerCase();
+        existingFriend.gender = sanitizedGender;
         existingFriend.interests = interests || [];
         await existingFriend.save();
 
@@ -78,7 +91,7 @@ router.post('/', async (req: Request, res: Response) => {
           type: 'friend',
           name,
           age,
-          gender: gender.toLowerCase(),
+          gender: sanitizedGender,
           interests: interests || [],
         });
         await newFriend.save();
@@ -97,7 +110,7 @@ router.post('/', async (req: Request, res: Response) => {
         // Update existing persona
         persona.name = name;
         persona.age = age;
-        persona.gender = gender.toLowerCase();
+        persona.gender = sanitizedGender;
         persona.interests = interests || [];
         await persona.save();
       } else {
@@ -106,7 +119,7 @@ router.post('/', async (req: Request, res: Response) => {
           type: personaType,
           name,
           age,
-          gender: gender.toLowerCase(),
+          gender: sanitizedGender,
           interests: interests || [],
         });
         await persona.save();
@@ -192,6 +205,100 @@ router.get('/', async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: 'Failed to fetch personas',
+    });
+  }
+});
+
+/**
+ * PUT /api/v1/personas/:id
+ * Update a persona by ID
+ */
+router.put('/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { type, name, age, gender, interests } = req.body;
+
+    // Validate required fields
+    if (!name || !age || !gender) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: name, age, gender',
+      });
+    }
+
+    // Sanitize gender input
+    const sanitizedGender = gender.charAt(0).toUpperCase() + gender.slice(1).toLowerCase();
+    if (!['Male', 'Female', 'Other'].includes(sanitizedGender)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid gender. Must be Male, Female, or Other',
+      });
+    }
+
+    const updatedPersona = await Persona.findByIdAndUpdate(
+      id,
+      {
+        type: type?.toLowerCase(),
+        name,
+        age,
+        gender: sanitizedGender,
+        interests: interests || [],
+      },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedPersona) {
+      return res.status(404).json({
+        success: false,
+        message: `No persona found with ID: ${id}`,
+      });
+    }
+
+    console.log(`✏️ Updated persona: ${updatedPersona.name} (${updatedPersona.type})`);
+
+    res.json({
+      success: true,
+      message: `Persona ${updatedPersona.name} updated successfully`,
+      data: updatedPersona,
+    });
+  } catch (error) {
+    console.error('Error updating persona:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update persona',
+    });
+  }
+});
+
+/**
+ * DELETE /api/v1/personas/:id
+ * Delete a persona by ID
+ */
+router.delete('/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const deletedPersona = await Persona.findByIdAndDelete(id);
+
+    if (!deletedPersona) {
+      return res.status(404).json({
+        success: false,
+        message: `No persona found with ID: ${id}`,
+      });
+    }
+
+    console.log(`🗑️ Deleted persona: ${deletedPersona.name} (${deletedPersona.type})`);
+
+    res.json({
+      success: true,
+      message: `Persona ${deletedPersona.name} deleted successfully`,
+      data: deletedPersona,
+    });
+  } catch (error) {
+    console.error('Error deleting persona:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to delete persona',
     });
   }
 });

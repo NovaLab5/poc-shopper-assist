@@ -29,6 +29,19 @@ export interface PersonasResponse {
   error?: string;
 }
 
+export interface PersonaRecognitionResult {
+  found: boolean;
+  persona: Persona | null;
+  needsInfo: string[]; // List of missing fields: 'name', 'age', 'interests', etc.
+  message: string; // User-friendly message
+}
+
+export interface PersonaRecognitionResponse {
+  success: boolean;
+  data?: PersonaRecognitionResult;
+  error?: string;
+}
+
 /**
  * Get a persona by type (e.g., mother, father, friend)
  */
@@ -135,6 +148,36 @@ export async function getPersonasByType(type: string): Promise<Persona[]> {
   } catch (error) {
     console.error('Error fetching personas by type:', error);
     return [];
+  }
+}
+
+/**
+ * Smart persona recognition - checks database FIRST before asking questions
+ * This is the centralized function used by all flows
+ */
+export async function recognizePersona(
+  type: string,
+  name?: string
+): Promise<PersonaRecognitionResult | null> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/v1/persona-recognition`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ type, name }),
+    });
+
+    const result: PersonaRecognitionResponse = await response.json();
+
+    if (result.success && result.data) {
+      return result.data;
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Error recognizing persona:', error);
+    return null;
   }
 }
 

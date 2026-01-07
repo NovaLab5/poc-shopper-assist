@@ -28,9 +28,9 @@ router.post('/', async (req, res) => {
     const request = {
       input: { text },
       voice: {
-        languageCode: 'en-US',
-        name: 'en-US-Journey-F', // Natural female voice
-        ssmlGender: 'FEMALE' as const,
+        languageCode: 'en-GB',
+        name: 'en-GB-Neural2-B', // Natural British male voice
+        ssmlGender: 'MALE' as const,
       },
       audioConfig: {
         audioEncoding: 'MP3' as const,

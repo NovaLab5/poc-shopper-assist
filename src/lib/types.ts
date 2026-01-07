@@ -37,6 +37,7 @@ export type Product = {
   price: number;
   amazonUrl: string;
   imageUrl?: string;
+  aiRecommendation?: string;
 };
 
 export type SelectedAnswer = {

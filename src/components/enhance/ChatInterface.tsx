@@ -1,9 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
-import { ArrowLeft, Send, Star, RotateCcw, AudioWaveform, User, Cake, Heart, Sparkles } from 'lucide-react';
+import { ArrowLeft, Send, Star, RotateCcw, AudioWaveform, User, Cake, Heart, Sparkles, TrendingUp, TrendingDown } from 'lucide-react';
 import { AILoadingOverlay } from '@/components/AILoadingOverlay';
 import { TypingMessage } from '@/components/enhance/TypingMessage';
+import { ProductResultsDisplay, type ProductItem } from '@/components/shared/ProductResultsDisplay';
+import { ProductSearchLoadingScreen } from '@/components/shared/ProductSearchLoadingScreen';
 import sourDillLogo from '@/assets/sour-dillmas-logo.png';
-import { getPersonaByType, savePersona, getPersonasByType, type Persona } from '@/services/personaService';
+import { usePersona } from '@/hooks/usePersona';
+import { getPersonasByType, type Persona } from '@/services/personaService';
 import { getProductsByCategory, getCategoryPriceRange, transformProductsForComponent } from '@/services/productService';
 import { Slider } from '@/components/ui/slider';
 
@@ -61,6 +64,134 @@ type ChatFlowStep =
   | 'showing_results'
   | 'no_results_refining';
 
+// Levenshtein distance for fuzzy string matching
+function levenshteinDistance(str1: string, str2: string): number {
+  const len1 = str1.length;
+  const len2 = str2.length;
+  const matrix: number[][] = [];
+
+  for (let i = 0; i <= len1; i++) {
+    matrix[i] = [i];
+  }
+
+  for (let j = 0; j <= len2; j++) {
+    matrix[0][j] = j;
+  }
+
+  for (let i = 1; i <= len1; i++) {
+    for (let j = 1; j <= len2; j++) {
+      const cost = str1[i - 1] === str2[j - 1] ? 0 : 1;
+      matrix[i][j] = Math.min(
+        matrix[i - 1][j] + 1,      // deletion
+        matrix[i][j - 1] + 1,      // insertion
+        matrix[i - 1][j - 1] + cost // substitution
+      );
+    }
+  }
+
+  return matrix[len1][len2];
+}
+
+// Calculate similarity score (0-1, where 1 is exact match)
+function calculateSimilarity(str1: string, str2: string): number {
+  const s1 = str1.toLowerCase().trim();
+  const s2 = str2.toLowerCase().trim();
+
+  // Exact match
+  if (s1 === s2) return 1.0;
+
+  // One contains the other
+  if (s1.includes(s2) || s2.includes(s1)) return 0.9;
+
+  // Calculate Levenshtein distance
+  const distance = levenshteinDistance(s1, s2);
+  const maxLen = Math.max(s1.length, s2.length);
+
+  // Convert distance to similarity (0-1)
+  return 1 - (distance / maxLen);
+}
+
+// Fuzzy match personas by name
+function fuzzyMatchPersonas(input: string, personas: Persona[]): Persona[] {
+  const inputLower = input.toLowerCase().trim();
+
+  // First, check for exact match
+  const exactMatch = personas.find(p => p.name.toLowerCase() === inputLower);
+  if (exactMatch) {
+    return [exactMatch];
+  }
+
+  // Score each persona
+  const scored = personas.map(persona => {
+    const fullName = persona.name.toLowerCase();
+    const nameParts = fullName.split(' ');
+    const inputParts = inputLower.split(' ');
+
+    // Calculate best match score
+    let bestScore = 0;
+
+    // Check full name similarity
+    const fullNameScore = calculateSimilarity(inputLower, fullName);
+    bestScore = Math.max(bestScore, fullNameScore);
+
+    // Bonus for exact full name match
+    if (inputLower === fullName) {
+      bestScore = 1.0;
+    }
+
+    // Check if all input parts have good matches in name parts
+    if (inputParts.length > 1 && nameParts.length > 1) {
+      const partScores = inputParts.map(inputPart => {
+        return Math.max(...nameParts.map(namePart =>
+          calculateSimilarity(inputPart, namePart)
+        ));
+      });
+      const avgScore = partScores.reduce((a, b) => a + b, 0) / partScores.length;
+
+      // If all parts match well, give high score
+      if (partScores.every(s => s >= 0.8)) {
+        bestScore = Math.max(bestScore, avgScore * 1.1); // Boost multi-part matches
+      } else {
+        bestScore = Math.max(bestScore, avgScore);
+      }
+    }
+
+    // Penalty for length mismatch (prefer names closer in length)
+    const lengthRatio = Math.min(inputLower.length, fullName.length) / Math.max(inputLower.length, fullName.length);
+    const lengthPenalty = 1 - (1 - lengthRatio) * 0.2; // Max 20% penalty
+    bestScore *= lengthPenalty;
+
+    return { persona, score: bestScore };
+  });
+
+  // Filter by threshold (0.6 = 60% similarity)
+  const threshold = 0.6;
+  const matches = scored
+    .filter(s => s.score >= threshold)
+    .sort((a, b) => {
+      // Sort by score descending
+      if (Math.abs(a.score - b.score) > 0.01) {
+        return b.score - a.score;
+      }
+      // If scores are very close, prefer longer names (more specific)
+      return b.persona.name.length - a.persona.name.length;
+    })
+    .map(s => s.persona);
+
+  // If we have multiple matches and one is significantly better, only return that one
+  if (matches.length > 1) {
+    const topScore = scored.find(s => s.persona === matches[0])?.score || 0;
+    const secondScore = scored.find(s => s.persona === matches[1])?.score || 0;
+
+    // If top match is significantly better (>15% better), only return it
+    if (topScore - secondScore > 0.15) {
+      return [matches[0]];
+    }
+  }
+
+  return matches;
+}
+
 export function ChatInterface({ onBack, getChatState, setChatState, onReset, onSwitchToVoice }: ChatInterfaceProps) {
   // UI State
   const [messages, setMessages] = useState<Message[]>([]);
@@ -73,7 +204,6 @@ export function ChatInterface({ onBack, getChatState, setChatState, onReset, onS
   // Flow State
   const [flowStep, setFlowStep] = useState<ChatFlowStep>('initial');
   const [personaType, setPersonaType] = useState<string>('');
-  const [currentPersona, setCurrentPersona] = useState<Persona | null>(null);
   const [detectedCategory, setDetectedCategory] = useState<string>('');
   const [userMentionedCategory, setUserMentionedCategory] = useState(false);
   const [friendsList, setFriendsList] = useState<Persona[]>([]);
@@ -85,11 +215,18 @@ export function ChatInterface({ onBack, getChatState, setChatState, onReset, onS
   const [personaGender, setPersonaGender] = useState('');
   const [personaInterests, setPersonaInterests] = useState<string[]>([]);
 
+  // Use centralized persona hook
+  const {
+    currentPersona,
+    loadPersona,
+    savePersona: savePersonaHook,
+    clearPersona
+  } = usePersona();
+
   // Product Search State
   const [selectedBudget, setSelectedBudget] = useState(500);
   const [priceRange, setPriceRange] = useState({ min: 50, max: 1000 });
   const [products, setProducts] = useState<Product[]>([]);
-  const [showSecondOption, setShowSecondOption] = useState(false);
 
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -205,31 +342,33 @@ export function ChatInterface({ onBack, getChatState, setChatState, onReset, onS
           setFlowStep('asking_friend_name');
           addAIMessage("What's your friend's name?");
         } else {
+          // USE CENTRALIZED PERSONA RECOGNITION
           setFlowStep('checking_persona');
           setIsTyping(true);
-          setLoadingMessage(`SweetDill AI is retrieving historical data on ${detected}...`);
+          setLoadingMessage(`Checking if I know your ${detected}...`);
 
           setTimeout(async () => {
-            const persona = await getPersonaByType(detected);
+            const result = await loadPersona(detected);
             setIsTyping(false);
 
-            if (persona) {
-              setCurrentPersona(persona);
-              setPersonaName(persona.name);
+            if (result.found && result.persona) {
+              // Persona found! Skip all questions
+              setPersonaName(result.persona.name);
               setFlowStep('persona_found');
-              addAIMessage(`Great! I found some information about ${persona.name}. ${persona.name} is ${persona.age} years old and interested in ${persona.interests.slice(0, 2).join(', ')}. Do you have any category in mind or you want me to suggest something for ${persona.name}?`);
+              addAIMessage(`Great! Shopping for ${result.persona.name}. I remember ${result.persona.name} is ${result.persona.age} years old and loves ${result.persona.interests.slice(0, 2).join(', ')}. Do you have any category in mind or want me to suggest something?`);
             } else {
+              // Persona not found - need to collect info
               setFlowStep('persona_not_found');
               setIsTyping(true);
-              setLoadingMessage(`SweetDill AI could not find any info on ${detected}...`);
+              setLoadingMessage(`No information found for ${detected}...`);
 
               setTimeout(() => {
                 setIsTyping(false);
-                addAIMessage(`I couldn't find any information about your ${detected}. Please describe them - full name, age, gender, and interests (e.g., "John Smith, 35, male, loves cooking and hiking")`);
+                addAIMessage(`I don't have information about your ${detected} yet. Tell me about them - what's their name, age, and what do they love?`);
                 setFlowStep('creating_persona_description');
-              }, 3500);
+              }, 1000);
             }
-          }, 3500);
+          }, 800); // Faster response
         }
       } else {
         addAIMessage("I'm not sure who you're shopping for. Could you please specify? (e.g., mother, friend, father)");
@@ -247,10 +386,8 @@ export function ChatInterface({ onBack, getChatState, setChatState, onReset, onS
         const allFriends = await getPersonasByType('friend');
         setFriendsList(allFriends);
 
-        // Find friends matching the first name
-        const matches = allFriends.filter(f =>
-          f.name.toLowerCase().includes(friendName.toLowerCase())
-        );
+        // Use fuzzy matching to find friends
+        const matches = fuzzyMatchPersonas(friendName, allFriends);
 
         setIsTyping(false);
 
@@ -274,11 +411,9 @@ export function ChatInterface({ onBack, getChatState, setChatState, onReset, onS
         }
       }, 3500);
     } else if (flowStep === 'asking_friend_last_name') {
-      // User provided last name to disambiguate
-      const lastName = userInput.toLowerCase();
-      const match = matchingFriends.find(f =>
-        f.name.toLowerCase().includes(lastName)
-      );
+      // User provided last name to disambiguate - use fuzzy matching
+      const matches = fuzzyMatchPersonas(userInput, matchingFriends);
+      const match = matches.length > 0 ? matches[0] : null;
 
       if (match) {
         setCurrentPersona(match);
@@ -289,49 +424,89 @@ export function ChatInterface({ onBack, getChatState, setChatState, onReset, onS
         addAIMessage(`I couldn't find a match. Let me ask again - which friend are you shopping for? ${matchingFriends.map(f => f.name).join(', ')}`);
       }
     } else if (flowStep === 'creating_persona_description') {
-      // Parse the description: "John Smith, 35, male, loves cooking and hiking"
-      const parts = userInput.split(',').map(p => p.trim());
+      // Smart parsing - handle natural language input
+      // Examples:
+      // "Zahra Juju she is 41 and love laptop and food"
+      // "She is Zahra morche, she loves dance and laptops"
+      // "John Smith, 35, male, loves cooking and hiking"
 
-      if (parts.length >= 3) {
-        const name = parts[0];
-        const age = parseInt(parts[1]);
-        const gender = parts[2].toLowerCase();
-        const interests = parts.slice(3).join(',').split(/and|,/).map(i => i.trim()).filter(i => i);
+      const input = userInput.toLowerCase();
 
-        setPersonaName(name);
-        setPersonaAge(age);
-        setPersonaGender(gender);
-        setPersonaInterests(interests.length > 0 ? interests : ['general']);
+      // Extract name - skip pronouns (he/she/his/her) and find actual name
+      let name = '';
 
-        // Save persona
-        setIsTyping(true);
-        setLoadingMessage("Saving persona information...");
+      // Remove common pronouns and filler words from the start
+      const cleanedInput = userInput.replace(/^(She is|He is|she is|he is|She's|He's|she's|he's)\s+/i, '');
 
-        setTimeout(async () => {
-          console.log('💾 Saving persona:', { type: personaType, name, age, gender, interests });
+      // Split by common stop words and take the name part
+      const stopWords = /\s+(she|he|and|is|was|loves?|likes?|enjoys?|interested|age|years?|old|male|female|,|\d)/i;
+      const beforeStop = cleanedInput.split(stopWords)[0].trim();
 
-          const savedPersona = await savePersona({
-            type: personaType,
-            name,
-            age: isNaN(age) ? 30 : age,
-            gender: gender || 'other',
-            interests: interests.length > 0 ? interests : ['general']
-          });
+      // Take first 2-3 words as name and clean up punctuation
+      const nameParts = beforeStop.split(/\s+/).filter(w => w.length > 0);
+      name = nameParts.slice(0, 3).join(' ').replace(/[,;.!?]+$/, '').trim();
 
-          if (savedPersona) {
-            console.log('✅ Persona saved successfully:', savedPersona);
-            setCurrentPersona(savedPersona);
-          } else {
-            console.error('❌ Failed to save persona');
-          }
-
-          setIsTyping(false);
-          setFlowStep('asking_category');
-          addAIMessage(`Perfect! Do you have any category in mind or you want me to suggest something for ${name}?`);
-        }, 2000);
-      } else {
-        addAIMessage("Please provide the information in this format: Full Name, Age, Gender, Interests (e.g., 'John Smith, 35, male, cooking and hiking')");
+      // If no name found, use fallback
+      if (!name || name.length < 2) {
+        const words = cleanedInput.split(/\s+/);
+        name = words.slice(0, 2).join(' ').replace(/[,;.!?]+$/, '').trim();
       }
+
+      // Extract age (any number between 1-120)
+      const ageMatch = input.match(/\b(\d{1,3})\b/);
+      const age = ageMatch ? parseInt(ageMatch[1]) : 30;
+
+      // Extract gender (male, female, or detect from pronouns)
+      let gender = 'other';
+      if (input.includes('she ') || input.includes('she is') || input.includes('her ') || input.includes('female')) {
+        gender = 'female';
+      } else if (input.includes('he ') || input.includes('he is') || input.includes('his ') || input.includes('male')) {
+        gender = 'male';
+      }
+
+      // Extract interests (words after "love", "loves", "interested in", "likes")
+      const interestPatterns = [
+        /(?:love|loves|loving)\s+([^,.]+)/gi,
+        /(?:interested in|interest in)\s+([^,.]+)/gi,
+        /(?:like|likes|liking)\s+([^,.]+)/gi,
+        /(?:enjoy|enjoys|enjoying)\s+([^,.]+)/gi
+      ];
+
+      const interests: string[] = [];
+      interestPatterns.forEach(pattern => {
+        const matches = input.matchAll(pattern);
+        for (const match of matches) {
+          const items = match[1].split(/\s+and\s+|\s*,\s*/);
+          interests.push(...items.map(i => i.trim()).filter(i => i && i.length > 2));
+        }
+      });
+
+      console.log('📝 Parsed persona:', { name, age, gender, interests });
+
+      setPersonaName(name);
+      setPersonaAge(age);
+      setPersonaGender(gender);
+      setPersonaInterests(interests.length > 0 ? interests : ['general']);
+
+      // Save persona using centralized hook
+      setIsTyping(true);
+      setLoadingMessage("Saving persona information...");
+
+      setTimeout(async () => {
+        console.log('💾 Saving persona:', { type: personaType, name, age, gender, interests });
+
+        await savePersonaHook({
+          type: personaType,
+          name,
+          age: isNaN(age) ? 30 : age,
+          gender: gender || 'other',
+          interests: interests.length > 0 ? interests : ['general']
+        });
+
+        setIsTyping(false);
+        setFlowStep('asking_category');
+        addAIMessage(`Perfect! I'll remember ${name} for next time. Do you have any category in mind or want me to suggest something for ${name}?`);
+      }, 1500);
     } else if (flowStep === 'persona_found' || flowStep === 'asking_category') {
       // Check if user mentioned a category or wants AI to suggest
       const lowerInput = userInput.toLowerCase();
@@ -348,11 +523,23 @@ export function ChatInterface({ onBack, getChatState, setChatState, onReset, onS
           // Map interests to categories
           const interests = currentPersona?.interests || personaInterests;
           const categoryMap: Record<string, string[]> = {
-            'grills': ['cooking', 'grilling', 'bbq', 'outdoor', 'food', 'chef', 'grill'],
-            'watches': ['time', 'watch', 'fitness', 'tech', 'smartwatch', 'health'],
-            'skechers': ['walking', 'shoes', 'comfort', 'travel', 'running', 'fitness'],
-            'jewellery': ['jewelry', 'jewellery', 'fashion', 'accessories', 'elegant'],
-            'clothing': ['fashion', 'clothes', 'style', 'apparel', 'wear']
+            'grills': ['cooking', 'grilling', 'bbq', 'outdoor', 'food', 'chef', 'grill', 'barbecue', 'meat', 'hosting'],
+            'watches': ['time', 'watch', 'fitness', 'tech', 'smartwatch', 'health', 'tracking', 'wearable', 'apple watch'],
+            'headphones': ['music', 'audio', 'sound', 'listening', 'headphones', 'earbuds', 'podcast', 'gaming'],
+            'laptops': ['computer', 'laptop', 'work', 'programming', 'coding', 'tech', 'productivity', 'student', 'business'],
+            'smartphones': ['phone', 'mobile', 'smartphone', 'tech', 'communication', 'apps', 'social media'],
+            'camera': ['photography', 'photo', 'camera', 'pictures', 'video', 'vlogging', 'content creation', 'travel'],
+            'tv': ['tv', 'television', 'movies', 'streaming', 'entertainment', 'gaming', 'home theater'],
+            'running-gear': ['running', 'jogging', 'marathon', 'fitness', 'exercise', 'cardio', 'athletic'],
+            'board-games': ['games', 'board games', 'family', 'fun', 'entertainment', 'social', 'party'],
+            'travel-gear-and-accessories': ['travel', 'vacation', 'adventure', 'backpacking', 'luggage', 'trip', 'exploring'],
+            'home-office-furniture-and-supplies': ['work', 'office', 'desk', 'home office', 'productivity', 'remote work', 'ergonomic'],
+            'luxurious-gifts': ['luxury', 'premium', 'high-end', 'elegant', 'sophisticated', 'exclusive'],
+            'self-care-gifts-for-yourself': ['self-care', 'wellness', 'relaxation', 'spa', 'meditation', 'mindfulness', 'health'],
+            'socks': ['socks', 'comfort', 'cozy', 'feet', 'warm'],
+            'pajamas': ['sleep', 'pajamas', 'comfort', 'relaxation', 'bedtime', 'loungewear'],
+            'jewellery': ['jewelry', 'jewellery', 'fashion', 'accessories', 'elegant', 'style', 'necklace', 'bracelet'],
+            'clothing': ['fashion', 'clothes', 'style', 'apparel', 'wear', 'outfit', 'wardrobe']
           };
 
           // Score each category
@@ -363,13 +550,33 @@ export function ChatInterface({ onBack, getChatState, setChatState, onReset, onS
             return { category, score };
           });
 
-          // Get top 3 categories
-          const top3 = scores
-            .sort((a, b) => b.score - a.score)
-            .slice(0, 3)
-            .map(s => s.category);
+          // Get top 3 categories with score > 0, or fallback to generic suggestions
+          const scoredCategories = scores.filter(s => s.score > 0).sort((a, b) => b.score - a.score);
 
-          const categoriesText = top3.map((cat, i) => `${i + 1}. ${cat.charAt(0).toUpperCase() + cat.slice(1)}`).join('\n');
+          let top3: string[];
+          if (scoredCategories.length >= 3) {
+            // We have 3+ matches, use top 3
+            top3 = scoredCategories.slice(0, 3).map(s => s.category);
+          } else if (scoredCategories.length > 0) {
+            // We have 1-2 matches, use them and fill with popular categories
+            const matched = scoredCategories.map(s => s.category);
+            const fallbacks = ['luxurious-gifts', 'self-care-gifts-for-yourself', 'travel-gear-and-accessories']
+              .filter(cat => !matched.includes(cat));
+            top3 = [...matched, ...fallbacks].slice(0, 3);
+          } else {
+            // No matches, use generic popular categories
+            top3 = ['luxurious-gifts', 'self-care-gifts-for-yourself', 'travel-gear-and-accessories'];
+          }
+
+          // Format category names nicely (replace hyphens with spaces, capitalize words)
+          const formatCategoryName = (cat: string) => {
+            return cat
+              .split('-')
+              .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+              .join(' ');
+          };
+
+          const categoriesText = top3.map((cat, i) => `${i + 1}. ${formatCategoryName(cat)}`).join('\n');
 
           addAIMessage(`Based on ${personaName}'s interests, here are the best categories:\n\n${categoriesText}\n\nWhich one would you like to explore?`);
           setFlowStep('asking_category');
@@ -379,7 +586,19 @@ export function ChatInterface({ onBack, getChatState, setChatState, onReset, onS
         const categoryKeywords: Record<string, string[]> = {
           'grills': ['grill', 'bbq', 'barbecue'],
           'watches': ['watch', 'smartwatch', 'timepiece'],
-          'skechers': ['skechers', 'shoes', 'sneakers', 'footwear'],
+          'headphones': ['headphone', 'earbuds', 'airpods', 'audio'],
+          'laptops': ['laptop', 'computer', 'macbook', 'notebook'],
+          'smartphones': ['phone', 'smartphone', 'iphone', 'android'],
+          'camera': ['camera', 'photography', 'photo'],
+          'tv': ['tv', 'television', 'screen'],
+          'running-gear': ['running', 'jogging', 'athletic'],
+          'board-games': ['board game', 'game', 'tabletop'],
+          'travel-gear-and-accessories': ['travel', 'luggage', 'backpack'],
+          'home-office-furniture-and-supplies': ['office', 'desk', 'chair', 'workspace'],
+          'luxurious-gifts': ['luxury', 'premium', 'high-end'],
+          'self-care-gifts-for-yourself': ['self-care', 'wellness', 'spa'],
+          'socks': ['socks'],
+          'pajamas': ['pajamas', 'sleepwear', 'loungewear'],
           'jewellery': ['jewelry', 'jewellery', 'necklace', 'bracelet', 'ring'],
           'clothing': ['clothes', 'clothing', 'apparel', 'shirt', 'pants', 'sweater']
         };
@@ -436,7 +655,7 @@ export function ChatInterface({ onBack, getChatState, setChatState, onReset, onS
             setFlowStep('showing_results');
             addAIMessage("Here are the best options I found for you:", {
               showProducts: true,
-              products: transformedProducts.slice(0, 2)
+              products: transformedProducts // Pass all products so we can show upgrade/budget options
             });
           } else {
             setFlowStep('no_results_refining');
@@ -480,7 +699,7 @@ export function ChatInterface({ onBack, getChatState, setChatState, onReset, onS
             setFlowStep('showing_results');
             addAIMessage(`Great! I found some options with the adjusted budget:`, {
               showProducts: true,
-              products: transformedProducts.slice(0, 2)
+              products: transformedProducts // Pass all products for upgrade/budget options
             });
           } else {
             addAIMessage(`Still no results. Let's try a different category or price range. What else would work for ${personaName}?`);
@@ -488,12 +707,15 @@ export function ChatInterface({ onBack, getChatState, setChatState, onReset, onS
         }, 8000);
       } else {
         // User mentioned features or other preferences
+        const expandedBudget = selectedBudget * 2;
+        setSelectedBudget(expandedBudget);
+
         addAIMessage(`I understand you're looking for ${userInput}. Let me search with a broader price range to find the best match!`);
         setFlowStep('searching_products');
         setShowDetailedLoading(true);
 
         setTimeout(async () => {
-          const fetchedProducts = await getProductsByCategory(detectedCategory, selectedBudget * 2);
+          const fetchedProducts = await getProductsByCategory(detectedCategory, expandedBudget);
           const transformedProducts = fetchedProducts
             .map(p => ({
               id: p.id,
@@ -513,7 +735,7 @@ export function ChatInterface({ onBack, getChatState, setChatState, onReset, onS
             setFlowStep('showing_results');
             addAIMessage(`Here are some great options I found:`, {
               showProducts: true,
-              products: transformedProducts.slice(0, 2)
+              products: transformedProducts // Pass all products for upgrade/budget options
             });
           } else {
             addAIMessage(`I'm having trouble finding ${detectedCategory} that match. Would you like to try a different category?`);
@@ -537,114 +759,14 @@ export function ChatInterface({ onBack, getChatState, setChatState, onReset, onS
     }
   };
 
-  // Detailed loading screen component
-  const DetailedLoadingScreen = () => {
-    const [currentStep, setCurrentStep] = useState(0);
 
-    const [randomNumbers] = useState({
-      resources: Math.floor(Math.random() * (37 - 19 + 1)) + 19,
-      reviews: Math.floor(Math.random() * (9 - 3 + 1)) + 3,
-    });
-
-    const categoryName = detectedCategory || 'products';
-    const steps = [
-      { icon: '🔍', text: `Checking ${randomNumbers.resources} resources for ${categoryName}`, duration: 1200 },
-      { icon: '⭐', text: `Checking ${randomNumbers.reviews} resources for customer reviews on ${categoryName}`, duration: 1200 },
-      { icon: '💰', text: 'Finding the best deals', duration: 1200 },
-      { icon: '📊', text: 'Evaluating product attributes', duration: 1200 },
-      { icon: '💵', text: 'Comparing prices', duration: 1200 },
-      { icon: '↩️', text: 'Checking return rates', duration: 1200 },
-    ];
-
-    useEffect(() => {
-      if (!showDetailedLoading) {
-        setCurrentStep(0);
-        return;
-      }
-
-      let totalDelay = 0;
-      steps.forEach((step, index) => {
-        setTimeout(() => {
-          setCurrentStep(index + 1);
-        }, totalDelay);
-        totalDelay += step.duration;
-      });
-    }, [showDetailedLoading]);
-
-    if (!showDetailedLoading) return null;
-
-    const progress = ((currentStep) / steps.length) * 100;
-
-    return (
-      <div className="absolute inset-0 z-50 bg-background flex flex-col items-center justify-center px-6 rounded-xl">
-        {/* Logo */}
-        <div className="mb-8">
-          <div className="relative">
-            <div className="absolute inset-0 bg-primary/30 rounded-full blur-2xl animate-pulse" />
-            <div className="relative w-24 h-24 rounded-full overflow-hidden border-4 border-primary shadow-2xl">
-              <img src={sourDillLogo} alt="Sweet Dill" className="w-full h-full object-cover" />
-            </div>
-          </div>
-        </div>
-
-        {/* Title */}
-        <h2 className="text-xl font-bold text-foreground mb-2 text-center capitalize">
-          Finding Best {categoryName}
-        </h2>
-        <p className="text-sm text-muted-foreground mb-8 text-center">
-          Please wait while we search...
-        </p>
-
-        {/* Current Step Display */}
-        <div className="mb-8 text-center min-h-[120px] flex items-center justify-center">
-          {currentStep > 0 && currentStep <= steps.length && (
-            <div className="flex flex-col items-center gap-3 animate-in fade-in duration-300">
-              <div className="text-5xl animate-bounce">
-                {steps[currentStep - 1].icon}
-              </div>
-              <p className="text-sm font-semibold text-foreground px-4">
-                {steps[currentStep - 1].text}
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* Progress Bar */}
-        <div className="w-full max-w-xs">
-          <div className="h-2 bg-secondary rounded-full overflow-hidden mb-2">
-            <div
-              className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-300 ease-out"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-          <p className="text-center text-xs font-medium text-primary">
-            {Math.round(progress)}%
-          </p>
-        </div>
-
-        {/* Step Dots */}
-        <div className="flex gap-2 mt-6">
-          {steps.map((_, index) => (
-            <div
-              key={index}
-              className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                index < currentStep
-                  ? 'bg-primary scale-110'
-                  : index === currentStep
-                  ? 'bg-accent scale-125 animate-pulse'
-                  : 'bg-muted'
-              }`}
-            />
-          ))}
-        </div>
-      </div>
-    );
-  };
 
   return (
     <div className="flex flex-col h-full relative">
       {showDetailedLoading ? (
-        <DetailedLoadingScreen />
+        <div className="absolute inset-0 z-50 bg-background rounded-xl">
+          <ProductSearchLoadingScreen category={detectedCategory || 'products'} duration={7200} />
+        </div>
       ) : (
         <AILoadingOverlay isVisible={isTyping} message={loadingMessage} />
       )}
@@ -695,64 +817,30 @@ export function ChatInterface({ onBack, getChatState, setChatState, onReset, onS
               </div>
             )}
 
-            {/* Product Cards */}
+            {/* Product Cards - Using Unified Component */}
             {message.showProducts && message.products && (
-              <>
-                {/* Product display - show max 2 products, centered */}
-                <div className="flex flex-col items-center gap-4">
-                  {(showSecondOption ? message.products.slice(0, 2) : message.products.slice(0, 1)).map((product, index) => (
-                    <a
-                      key={product.id}
-                      href={product.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full max-w-[280px] bg-card border-2 border-primary/30 rounded-2xl p-4 hover:shadow-xl transition-all cursor-pointer hover:border-primary hover:scale-[1.02] block group"
-                    >
-                      <div className="aspect-square rounded-xl overflow-hidden mb-3 bg-secondary/30 relative">
-                        <img
-                          src={product.image}
-                          alt={product.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                          onError={(e) => {
-                            e.currentTarget.src = 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=300&h=300&fit=crop';
-                          }}
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </div>
-                      <h4 className="text-sm font-semibold text-foreground line-clamp-2 mb-2">
-                        {product.name}
-                      </h4>
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-lg font-bold text-primary">${product.price}</span>
-                        <div className="flex items-center gap-1">
-                          <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
-                          <span className="text-xs text-muted-foreground font-medium">{product.rating}</span>
-                        </div>
-                      </div>
-                      <p className="text-xs text-muted-foreground">{product.store}</p>
-                    </a>
-                  ))}
-                </div>
+              <ProductResultsDisplay
+                products={message.products as ProductItem[]}
+                maxBudget={selectedBudget}
+                onSomethingElse={() => {
+                  // Go back to category selection - keep persona info
+                  setFlowStep('asking_category');
+                  setDetectedCategory('');
+                  setUserMentionedCategory(false);
+                  setSelectedBudget(500);
+                  setProducts([]);
 
-                {/* Show Second Premium Option button */}
-                {!showSecondOption && message.products.length >= 2 && (
-                  <div className="flex justify-center mt-4">
-                    <button
-                      onClick={() => setShowSecondOption(true)}
-                      className="relative px-8 py-4 text-base font-bold text-white rounded-full overflow-hidden group shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105"
-                      style={{
-                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                      }}
-                    >
-                      <div className="absolute inset-0 bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                      <span className="relative z-10 flex items-center gap-2">
-                        Show Second Premium Option
-                        <span className="text-xl">✨</span>
-                      </span>
-                    </button>
-                  </div>
-                )}
-              </>
+                  // Add message asking for new category
+                  const newMessage: Message = {
+                    id: Date.now().toString(),
+                    role: 'assistant',
+                    content: `Let's find something else for ${personaName}! Do you have any category in mind or want me to suggest something?`,
+                    isNew: true
+                  };
+                  setMessages(prev => [...prev, newMessage]);
+                  setMatchingFriends([]);
+                }}
+              />
             )}
           </div>
         ))}

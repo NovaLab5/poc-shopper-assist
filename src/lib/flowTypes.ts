@@ -104,7 +104,7 @@ export interface FlowSession {
 // Helper to format display labels from keys
 export function formatLabel(key: string): string {
   return key
-    .split('_')
+    .split(/[_-]/) // Split on both underscores and hyphens
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
 }

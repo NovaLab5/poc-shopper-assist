@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { ArrowLeft, Mic, MicOff, Star, Volume2, Loader2, RotateCcw, Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { AILoadingOverlay } from '@/components/AILoadingOverlay';
+import { ProductResultsDisplay, type ProductItem } from '@/components/shared/ProductResultsDisplay';
+import { ProductSearchLoadingScreen } from '@/components/shared/ProductSearchLoadingScreen';
 import sourDillmasLogo from '@/assets/sour-dillmas-logo.png';
 import { getProductsByCategory, transformProductsForComponent } from '@/services/productService';
 
@@ -46,7 +48,6 @@ export function VoiceInterface({ onBack, userName, onReset, autoStart = false }:
   const [productCategory, setProductCategory] = useState<string>('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
-  const [showAllProducts, setShowAllProducts] = useState(false); // Track if showing 2 products
   const [conversationStarted, setConversationStarted] = useState(autoStart);
   const [loadingMessage, setLoadingMessage] = useState("SweetDill AI is thinking...");
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -100,11 +101,12 @@ export function VoiceInterface({ onBack, userName, onReset, autoStart = false }:
             setProductCategory(category);
             setShowDetailedProductLoading(true);
 
-            // Show detailed loading for 6-8 seconds
+            // Show detailed loading for 7 seconds
             await new Promise(resolve => setTimeout(resolve, 7000));
 
             setProducts(productsToShow);
             setShowDetailedProductLoading(false);
+            setIsProcessing(false); // Turn off processing after products are shown
           }
         };
         await audioRef.current.play();
@@ -123,11 +125,12 @@ export function VoiceInterface({ onBack, userName, onReset, autoStart = false }:
         setProductCategory(category);
         setShowDetailedProductLoading(true);
 
-        // Show detailed loading for 6-8 seconds
+        // Show detailed loading for 7 seconds
         await new Promise(resolve => setTimeout(resolve, 7000));
 
         setProducts(productsToShow);
         setShowDetailedProductLoading(false);
+        setIsProcessing(false); // Turn off processing after products are shown
       }
 
       toast({ title: "Voice error", description: "Could not play audio. Showing products anyway.", variant: "destructive" });
@@ -137,22 +140,64 @@ export function VoiceInterface({ onBack, userName, onReset, autoStart = false }:
   const getAIResponse = async (userMessage?: string) => {
     setIsProcessing(true);
 
-    // Set appropriate loading message based on conversation state
-    if (!conversationStarted) {
-      setLoadingMessage("SweetDill AI is preparing the Voice");
-    } else if (userResponseIndex === 0) {
-      setLoadingMessage("SweetDill AI is collecting past conversation about friends...");
-    } else if (userResponseIndex === 1) {
-      setLoadingMessage("SweetDill AI is retrieving James related data...");
-    } else if (userResponseIndex === 2) {
-      setLoadingMessage("SweetDill AI is thinking...");
-    } else if (userResponseIndex === 3) {
-      setLoadingMessage("SweetDill AI is checking historical conversations...");
-    } else if (userResponseIndex === 4) {
-      setLoadingMessage("SweetDill AI is preparing the products...");
-    } else {
-      setLoadingMessage("SweetDill AI is thinking...");
-    }
+    // Set contextual loading message based on conversation content
+    const getContextualLoadingMessage = () => {
+      if (!conversationStarted) {
+        return "Starting voice assistant...";
+      }
+
+      const lowerMessage = userMessage?.toLowerCase() || '';
+
+      // Check for gift-related keywords
+      if (lowerMessage.includes('gift') || lowerMessage.includes('present')) {
+        return "Understanding your gift needs...";
+      }
+
+      // Check for friend/person mentions
+      if (lowerMessage.includes('friend') || lowerMessage.includes('mother') ||
+          lowerMessage.includes('father') || lowerMessage.includes('brother') ||
+          lowerMessage.includes('sister') || lowerMessage.includes('wife') ||
+          lowerMessage.includes('husband')) {
+        return "Analyzing recipient preferences...";
+      }
+
+      // Check for occasion mentions
+      if (lowerMessage.includes('birthday') || lowerMessage.includes('anniversary') ||
+          lowerMessage.includes('christmas') || lowerMessage.includes('wedding')) {
+        return "Considering the special occasion...";
+      }
+
+      // Check for budget/price mentions
+      if (lowerMessage.includes('$') || lowerMessage.includes('budget') ||
+          lowerMessage.includes('price') || /\d+/.test(lowerMessage)) {
+        return "Finding options within your budget...";
+      }
+
+      // Check for product categories
+      if (lowerMessage.includes('watch') || lowerMessage.includes('grill') ||
+          lowerMessage.includes('sunglasses') || lowerMessage.includes('laptop') ||
+          lowerMessage.includes('phone') || lowerMessage.includes('headphones')) {
+        return "Searching for the perfect product...";
+      }
+
+      // Check if we have products (likely final stage)
+      if (products.length > 0) {
+        return "Preparing your recommendations...";
+      }
+
+      // Check conversation length to determine stage
+      if (messages.length === 0) {
+        return "Getting ready to help you...";
+      } else if (messages.length < 3) {
+        return "Understanding your request...";
+      } else if (messages.length < 5) {
+        return "Gathering more details...";
+      } else {
+        return "Finding the best options for you...";
+      }
+    };
+
+    setLoadingMessage(getContextualLoadingMessage());
 
     try {
       // Use current messages state for API call
@@ -203,11 +248,14 @@ export function VoiceInterface({ onBack, userName, onReset, autoStart = false }:
       }
 
       // Speak the AI response (will add to transcript after speaking)
+      // Don't set isProcessing to false yet if we're about to show products
+      if (!productsToShow || productsToShow.length === 0) {
+        setIsProcessing(false);
+      }
       await speakText(data.response, productsToShow, true, category);
     } catch (error) {
       console.error('AI error:', error);
       toast({ title: "Error", description: "Could not get AI response.", variant: "destructive" });
-    } finally {
       setIsProcessing(false);
     }
   };
@@ -334,120 +382,24 @@ export function VoiceInterface({ onBack, userName, onReset, autoStart = false }:
 
   const isDisabled = isSpeaking || isProcessing || isSearchingProducts;
 
-  // Detailed Product Loading Screen Component
-  const DetailedProductLoadingScreen = () => {
-    const [currentStep, setCurrentStep] = useState(0);
-    const categoryName = getCategoryDisplayName(productCategory);
 
-    // Generate random numbers for this session
-    const [randomNumbers] = useState({
-      resources: Math.floor(Math.random() * (37 - 19 + 1)) + 19,
-      reviews: Math.floor(Math.random() * (9 - 3 + 1)) + 3,
-    });
-
-    const steps = [
-      { icon: '🔍', text: `Checking ${randomNumbers.resources} resources for ${categoryName}`, duration: 1200 },
-      { icon: '⭐', text: `Checking ${randomNumbers.reviews} resources for customer reviews on ${categoryName}`, duration: 1200 },
-      { icon: '💰', text: 'Finding the best deals', duration: 1200 },
-      { icon: '📊', text: 'Evaluating product attributes', duration: 1200 },
-      { icon: '💵', text: 'Comparing prices', duration: 1200 },
-      { icon: '↩️', text: 'Checking return rates', duration: 1200 },
-    ];
-
-    useEffect(() => {
-      if (!showDetailedProductLoading) {
-        setCurrentStep(0);
-        return;
-      }
-
-      let totalDelay = 0;
-      steps.forEach((step, index) => {
-        setTimeout(() => {
-          setCurrentStep(index + 1);
-        }, totalDelay);
-        totalDelay += step.duration;
-      });
-    }, [showDetailedProductLoading]);
-
-    if (!showDetailedProductLoading) return null;
-
-    const progress = ((currentStep) / steps.length) * 100;
-
-    return (
-      <div className="absolute inset-0 bg-background z-50 flex flex-col items-center justify-center px-6">
-        {/* Logo */}
-        <div className="mb-8">
-          <div className="relative">
-            <div className="absolute inset-0 bg-primary/30 rounded-full blur-2xl animate-pulse" />
-            <div className="relative w-24 h-24 rounded-full overflow-hidden border-4 border-primary shadow-2xl">
-              <img src={sourDillmasLogo} alt="Sweet Dill" className="w-full h-full object-cover" />
-            </div>
-          </div>
-        </div>
-
-        {/* Title */}
-        <h2 className="text-xl font-bold text-foreground mb-2 text-center">
-          Finding Best {categoryName}
-        </h2>
-        <p className="text-sm text-muted-foreground mb-8 text-center">
-          Please wait while we search...
-        </p>
-
-        {/* Current Step Display */}
-        <div className="mb-8 text-center min-h-[120px] flex items-center justify-center">
-          {currentStep > 0 && currentStep <= steps.length && (
-            <div className="flex flex-col items-center gap-3 animate-in fade-in duration-300">
-              <div className="text-5xl animate-bounce">
-                {steps[currentStep - 1].icon}
-              </div>
-              <p className="text-sm font-semibold text-foreground px-4">
-                {steps[currentStep - 1].text}
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* Progress Bar */}
-        <div className="w-full max-w-xs">
-          <div className="h-2 bg-secondary rounded-full overflow-hidden mb-2">
-            <div
-              className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-300 ease-out"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-          <p className="text-center text-xs font-medium text-primary">
-            {Math.round(progress)}%
-          </p>
-        </div>
-
-        {/* Step Dots */}
-        <div className="flex gap-2 mt-6">
-          {steps.map((_, index) => (
-            <div
-              key={index}
-              className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                index < currentStep
-                  ? 'bg-primary scale-110'
-                  : index === currentStep
-                  ? 'bg-accent scale-125 animate-pulse'
-                  : 'bg-muted'
-              }`}
-            />
-          ))}
-        </div>
-      </div>
-    );
-  };
 
   return (
     <div className="flex flex-col h-full px-4 relative">
       <audio ref={audioRef} />
 
       {/* Detailed Product Loading Screen */}
-      {showDetailedProductLoading && <DetailedProductLoadingScreen />}
+      {showDetailedProductLoading && (
+        <div className="absolute inset-0 bg-background z-50">
+          <ProductSearchLoadingScreen
+            category={getCategoryDisplayName(productCategory)}
+            duration={7000}
+          />
+        </div>
+      )}
 
-      {/* AI Loading Overlay - covers the whole interface */}
-      <AILoadingOverlay isVisible={isProcessing} message={loadingMessage} />
+      {/* AI Loading Overlay - covers the whole interface (but not when showing product loading) */}
+      <AILoadingOverlay isVisible={isProcessing && !showDetailedProductLoading} message={loadingMessage} />
 
       <div className="flex items-center gap-3 p-3 bg-card rounded-xl shadow-card border border-border/30 mb-3 shrink-0">
         <button
@@ -505,79 +457,29 @@ export function VoiceInterface({ onBack, userName, onReset, autoStart = false }:
             </div>
           )}
 
-          {/* Products Display */}
+          {/* Products Display - Using Unified Component */}
           {products.length > 0 && (
             <div className="w-full px-4 pb-4">
-              <div className="mb-3 flex justify-center">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary text-xs font-semibold rounded-full border border-primary/20">
-                  <Star className="w-3 h-3 fill-primary" />
-                  Premium Option
-                </span>
-              </div>
+              <ProductResultsDisplay
+                products={products as ProductItem[]}
+                maxBudget={null}
+                onSomethingElse={async () => {
+                  // Clear products and ask for new category/budget
+                  setProducts([]);
+                  setProductCategory('');
 
-              {/* Product display - show max 2 products, centered */}
-              <div className="flex flex-col items-center gap-4">
-                {(showAllProducts ? products.slice(0, 2) : products.slice(0, 1)).map((product) => (
-                  <a
-                    key={product.id}
-                    href={product.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full max-w-[280px] bg-card border-2 border-primary/30 rounded-2xl p-4 hover:shadow-xl transition-all cursor-pointer hover:border-primary hover:scale-[1.02] block group"
-                  >
-                    <div className="aspect-square rounded-xl overflow-hidden mb-3 bg-secondary/30 relative">
-                      {product.image ? (
-                        <img
-                          src={product.image}
-                          alt={product.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                          loading="eager"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.onerror = null; // Prevent infinite loop
-                            target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="400"%3E%3Crect fill="%23e5e7eb" width="400" height="400"/%3E%3Ctext fill="%236b7280" font-family="Arial" font-size="20" x="50%25" y="50%25" text-anchor="middle" dominant-baseline="middle"%3EProduct Image%3C/text%3E%3C/svg%3E';
-                          }}
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-secondary/50">
-                          <span className="text-muted-foreground text-sm">No Image</span>
-                        </div>
-                      )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </div>
-                    <h4 className="text-sm font-semibold text-foreground line-clamp-2 mb-2">
-                      {product.name}
-                    </h4>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-lg font-bold text-primary">${product.price}</span>
-                      <div className="flex items-center gap-1">
-                        <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
-                        <span className="text-xs text-muted-foreground font-medium">{product.rating}</span>
-                      </div>
-                    </div>
-                    <p className="text-xs text-muted-foreground">{product.store}</p>
-                  </a>
-                ))}
-              </div>
+                  // Add a message asking for new preferences
+                  const askAgainMessage = "No problem! What other category or budget would you like to explore?";
+                  setMessages(prev => [...prev, { role: 'assistant' as const, content: askAgainMessage }]);
 
-              {/* Eye-catching "Show Second Premium Option" button */}
-              {products.length > 1 && !showAllProducts && (
-                <div className="flex justify-center mt-4">
-                  <button
-                    onClick={() => setShowAllProducts(true)}
-                    className="relative px-8 py-4 text-base font-bold text-white rounded-full overflow-hidden group shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105"
-                    style={{
-                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    }}
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    <span className="relative z-10 flex items-center gap-2">
-                      Second Premium Option
-                      <span className="text-xl">✨</span>
-                    </span>
-                  </button>
-                </div>
-              )}
+                  // Speak the message
+                  try {
+                    await speakText(askAgainMessage, null, false);
+                  } catch (error) {
+                    console.error('Error speaking:', error);
+                  }
+                }}
+              />
             </div>
           )}
 

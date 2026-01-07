@@ -16,6 +16,7 @@ export interface Product {
   imageUrl?: string;
   rating?: number;
   store?: string;
+  aiRecommendation?: string;
 }
 
 export interface ProductFilters {
