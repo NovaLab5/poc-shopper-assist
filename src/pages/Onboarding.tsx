@@ -75,7 +75,7 @@ export default function Onboarding() {
   const step = onboardingSteps[currentStep];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#8BC34A]/10 via-white to-[#8BC34A]/20 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-primary/10 via-white to-primary/20 flex flex-col">
       <div className="p-4 flex justify-end">
         <Button
           variant="ghost"
@@ -88,98 +88,95 @@ export default function Onboarding() {
 
       <div className="flex-1 flex flex-col items-center justify-center px-6 pb-10">
         <PhoneMockup>
-          <div className="h-full flex flex-col p-6">
+          <div className="h-full flex flex-col p-6 relative">
             <div className="flex justify-center mb-6">
-              <Avatar className="h-[72px] w-[72px] border-[4px] border-[#8BC34A]/30 shadow-[0_6px_16px_rgba(0,0,0,0.12)]">
+              <Avatar className="h-20 w-20 border-4 border-primary/20">
                 <AvatarImage src={sourDillmasLogo} alt="Sweet Dill" />
                 <AvatarFallback>SD</AvatarFallback>
               </Avatar>
             </div>
 
-            <div className="text-center mb-5 space-y-4">
-              <h1 className="text-[28px] font-bold text-[#1F2937] leading-[34px] tracking-[-0.02em]">
+            <div className="text-center mb-6">
+              <h1 className="text-[28px] font-bold text-[#1F2937] mb-2 leading-[34px] tracking-tight">
                 {step.title}
               </h1>
-              <p className="text-[16px] text-[#8BC34A] font-medium leading-[22px]">
+              <p className="text-[17px] text-primary font-medium leading-[22px]">
                 {step.subtitle}
               </p>
             </div>
 
-            {currentStep === 0 && (
-              <div className="flex-1 space-y-6">
-                <p className="text-[14px] text-[#6B7280] text-center leading-[22px]">
-                  {step.description}
-                </p>
+            <div className="flex-1 overflow-auto pb-32">
+              {currentStep === 0 && (
+                <div className="space-y-4">
+                  <p className="text-[15px] text-[#6B7280] text-center leading-[22px] mb-6">
+                    {step.description}
+                  </p>
 
-                <div className="space-y-5">
-                  {step.features?.map((feature, idx) => (
-                    <Card
-                      key={idx}
-                      className="border border-[#E5E7EB] shadow-[0_2px_10px_rgba(15,23,42,0.08)]"
-                    >
-                      <CardContent className="p-6 flex items-start gap-4">
-                        <div className="w-11 h-11 rounded-full bg-[#F0F7EC] flex items-center justify-center shrink-0">
-                          <feature.icon className="w-5 h-5 text-[#8BC34A]" />
-                        </div>
-                        <div>
-                          <h3 className="text-[15px] font-semibold text-[#1F2937] mb-1 leading-[20px]">
-                            {feature.title}
-                          </h3>
-                          <p className="text-[13px] leading-[20px] text-[#6B7280]">
-                            {feature.description}
-                          </p>
-                        </div>
-                      </CardContent>
-                    </Card>
+                  <div className="space-y-3">
+                    {step.features?.map((feature, idx) => (
+                      <Card key={idx} className="border-0 shadow-[0_2px_12px_rgba(0,0,0,0.08)]">
+                        <CardContent className="p-5 flex items-start gap-4">
+                          <div className="w-12 h-12 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
+                            <feature.icon className="w-6 h-6 text-primary" />
+                          </div>
+                          <div>
+                            <h3 className="text-[17px] font-semibold text-[#1F2937] mb-1 leading-[22px]">
+                              {feature.title}
+                            </h3>
+                            <p className="text-[15px] leading-[20px] text-[#6B7280]">
+                              {feature.description}
+                            </p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {currentStep === 1 && (
+                <div className="space-y-6">
+                  {step.steps?.map((item, idx) => (
+                    <div key={idx} className="flex items-start gap-4">
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shrink-0 shadow-md">
+                        <span className="text-white font-bold text-[20px]">{item.number}</span>
+                      </div>
+                      <div className="flex-1 pt-2">
+                        <h3 className="text-[17px] font-semibold text-[#1F2937] mb-1 leading-[22px]">
+                          {item.title}
+                        </h3>
+                        <p className="text-[15px] text-[#6B7280] leading-[22px]">
+                          {item.description}
+                        </p>
+                      </div>
+                    </div>
                   ))}
                 </div>
-              </div>
-            )}
+              )}
+            </div>
 
-            {currentStep === 1 && (
-              <div className="flex-1 space-y-6">
-                {step.steps?.map((item, idx) => (
-                  <div key={idx} className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#8BC34A] to-[#7CB342] flex items-center justify-center shrink-0 shadow-lg">
-                      <span className="text-white font-bold text-[18px]">{item.number}</span>
-                    </div>
-                    <div className="flex-1 pt-1">
-                      <h3 className="text-[15px] font-semibold text-[#1F2937] mb-1 leading-[20px]">
-                        {item.title}
-                      </h3>
-                      <p className="text-[14px] text-[#6B7280] leading-[22px]">
-                        {item.description}
-                      </p>
-                    </div>
-                  </div>
+            <div className="absolute bottom-0 inset-x-0 p-6 pb-8 bg-gradient-to-t from-white via-white/95 to-transparent pointer-events-none">
+              <div className="flex justify-center gap-2 mb-4 pointer-events-auto">
+                {onboardingSteps.map((_, idx) => (
+                  <div
+                    key={idx}
+                    className={`h-2 rounded-full transition-all ${
+                      idx === currentStep ? 'w-8 bg-primary' : 'w-2 bg-gray-300'
+                    }`}
+                  />
                 ))}
               </div>
-            )}
+
+              <Button
+                onClick={handleNext}
+                className="w-full h-14 text-[17px] font-semibold rounded-full shadow-lg pointer-events-auto"
+              >
+                {currentStep < onboardingSteps.length - 1 ? 'Next' : "Let's Start"}
+                <ChevronRight className="w-5 h-5 ml-1" />
+              </Button>
+            </div>
           </div>
         </PhoneMockup>
-      </div>
-
-      <div className="p-6 space-y-4">
-        <div className="flex justify-center gap-2">
-          {onboardingSteps.map((_, idx) => (
-            <div
-              key={idx}
-              className={`rounded-full transition-all ${
-                idx === currentStep
-                  ? 'w-2 h-2 bg-[#8BC34A]'
-                  : 'w-[6px] h-[6px] bg-[#D1D5DB]'
-              }`}
-            />
-          ))}
-        </div>
-
-        <Button
-          onClick={handleNext}
-          className="w-full max-w-md mx-auto flex items-center justify-center gap-2 rounded-full h-14 text-base font-semibold bg-[#8BC34A] hover:bg-[#7CB342] text-white"
-        >
-          {currentStep < onboardingSteps.length - 1 ? 'Next' : "Let's Start"}
-          <ChevronRight className="w-5 h-5" />
-        </Button>
       </div>
     </div>
   );
