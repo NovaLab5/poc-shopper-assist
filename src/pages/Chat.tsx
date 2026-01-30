@@ -44,21 +44,21 @@ export default function Chat() {
 
       {step === 'initial' ? (
         <div className="flex-1 flex flex-col items-center justify-center px-6 pb-40">
-          {/* Avatar - smaller and centered */}
+          {/* Avatar - smaller and centered to match Figma */}
           <div className="mb-8 flex justify-center">
-            <Avatar className="h-20 w-20 border-4 border-white shadow-md">
+            <Avatar className="h-16 w-16 border-4 border-white shadow-md">
               <AvatarImage src={sourDillmasLogo} alt="Sweet Dill" />
               <AvatarFallback>SD</AvatarFallback>
             </Avatar>
           </div>
 
-          {/* Heading */}
-          <h2 className="text-[28px] font-normal text-[#414658] text-center mb-12 leading-tight" 
+          {/* Heading - single line to match Figma */}
+          <h2 className="text-[26px] font-normal text-[#414658] text-center mb-12 leading-tight whitespace-nowrap" 
               style={{ fontFamily: 'Figtree, system-ui, -apple-system, sans-serif' }}>
             Who are you shopping for?
           </h2>
 
-          {/* Buttons - HORIZONTAL layout */}
+          {/* Buttons - HORIZONTAL layout to match Figma */}
           <div className="flex gap-3 w-full max-w-[380px] px-4">
             <button
               onClick={() => handleChoice('myself')}
@@ -83,23 +83,6 @@ export default function Chat() {
               </div>
               Someone else
             </button>
-          </div>
-
-          {/* Chat bot area - message list placeholder */}
-          <div className="mt-8 w-full max-w-[380px] px-4">
-            <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-200">
-              <div className="flex items-start gap-3">
-                <Avatar className="h-8 w-8 shrink-0">
-                  <AvatarImage src={sourDillmasLogo} alt="Bot" />
-                  <AvatarFallback>SD</AvatarFallback>
-                </Avatar>
-                <div className="flex-1">
-                  <p className="text-[14px] text-[#6B7280] leading-relaxed">
-                    Hi! I'm your shopping assistant. Pick who you're shopping for, and let's find the perfect product together.
-                  </p>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       ) : (
