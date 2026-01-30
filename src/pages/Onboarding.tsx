@@ -75,9 +75,13 @@ export default function Onboarding() {
   const step = onboardingSteps[currentStep];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/10 via-white to-primary/20 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-[#8BC34A]/10 via-white to-[#8BC34A]/20 flex flex-col">
       <div className="p-4 flex justify-end">
-        <Button variant="ghost" onClick={handleSkip} className="text-sm">
+        <Button
+          variant="ghost"
+          onClick={handleSkip}
+          className="text-sm text-[#6B7280] hover:text-[#1F2937]"
+        >
           Skip
         </Button>
       </div>
@@ -86,37 +90,42 @@ export default function Onboarding() {
         <PhoneMockup>
           <div className="h-full flex flex-col p-6">
             <div className="flex justify-center mb-6">
-              <Avatar className="h-20 w-20 border-4 border-primary/20">
+              <Avatar className="h-[72px] w-[72px] border-[4px] border-[#8BC34A]/30 shadow-[0_6px_16px_rgba(0,0,0,0.12)]">
                 <AvatarImage src={sourDillmasLogo} alt="Sweet Dill" />
                 <AvatarFallback>SD</AvatarFallback>
               </Avatar>
             </div>
 
-            <div className="text-center mb-6">
-              <h1 className="text-[22px] font-semibold text-foreground mb-2">
+            <div className="text-center mb-5 space-y-4">
+              <h1 className="text-[28px] font-bold text-[#1F2937] leading-[34px] tracking-[-0.02em]">
                 {step.title}
               </h1>
-              <p className="text-[15px] text-primary font-medium">{step.subtitle}</p>
+              <p className="text-[16px] text-[#8BC34A] font-medium leading-[22px]">
+                {step.subtitle}
+              </p>
             </div>
 
             {currentStep === 0 && (
               <div className="flex-1 space-y-6">
-                <p className="text-sm text-muted-foreground text-center leading-6">
+                <p className="text-[14px] text-[#6B7280] text-center leading-[22px]">
                   {step.description}
                 </p>
 
-                <div className="space-y-4">
+                <div className="space-y-5">
                   {step.features?.map((feature, idx) => (
-                    <Card key={idx} className="border border-border/60 shadow-sm">
-                      <CardContent className="p-5 flex items-start gap-4">
-                        <div className="w-11 h-11 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                          <feature.icon className="w-5 h-5 text-primary" />
+                    <Card
+                      key={idx}
+                      className="border border-[#E5E7EB] shadow-[0_2px_10px_rgba(15,23,42,0.08)]"
+                    >
+                      <CardContent className="p-6 flex items-start gap-4">
+                        <div className="w-11 h-11 rounded-full bg-[#F0F7EC] flex items-center justify-center shrink-0">
+                          <feature.icon className="w-5 h-5 text-[#8BC34A]" />
                         </div>
                         <div>
-                          <h3 className="text-[15px] font-semibold text-foreground mb-1">
+                          <h3 className="text-[15px] font-semibold text-[#1F2937] mb-1 leading-[20px]">
                             {feature.title}
                           </h3>
-                          <p className="text-[13px] leading-5 text-muted-foreground">
+                          <p className="text-[13px] leading-[20px] text-[#6B7280]">
                             {feature.description}
                           </p>
                         </div>
@@ -131,12 +140,16 @@ export default function Onboarding() {
               <div className="flex-1 space-y-6">
                 {step.steps?.map((item, idx) => (
                   <div key={idx} className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shrink-0 shadow-lg">
-                      <span className="text-white font-bold text-lg">{item.number}</span>
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#8BC34A] to-[#7CB342] flex items-center justify-center shrink-0 shadow-lg">
+                      <span className="text-white font-bold text-[18px]">{item.number}</span>
                     </div>
                     <div className="flex-1 pt-1">
-                      <h3 className="font-semibold text-foreground mb-1">{item.title}</h3>
-                      <p className="text-sm text-muted-foreground">{item.description}</p>
+                      <h3 className="text-[15px] font-semibold text-[#1F2937] mb-1 leading-[20px]">
+                        {item.title}
+                      </h3>
+                      <p className="text-[14px] text-[#6B7280] leading-[22px]">
+                        {item.description}
+                      </p>
                     </div>
                   </div>
                 ))}
@@ -151,8 +164,10 @@ export default function Onboarding() {
           {onboardingSteps.map((_, idx) => (
             <div
               key={idx}
-              className={`h-2 rounded-full transition-all ${
-                idx === currentStep ? 'w-8 bg-primary' : 'w-2 bg-muted'
+              className={`rounded-full transition-all ${
+                idx === currentStep
+                  ? 'w-2 h-2 bg-[#8BC34A]'
+                  : 'w-[6px] h-[6px] bg-[#D1D5DB]'
               }`}
             />
           ))}
@@ -160,7 +175,7 @@ export default function Onboarding() {
 
         <Button
           onClick={handleNext}
-          className="w-full max-w-md mx-auto flex items-center justify-center gap-2 rounded-full py-6"
+          className="w-full max-w-md mx-auto flex items-center justify-center gap-2 rounded-full h-14 text-base font-semibold bg-[#8BC34A] hover:bg-[#7CB342] text-white"
         >
           {currentStep < onboardingSteps.length - 1 ? 'Next' : "Let's Start"}
           <ChevronRight className="w-5 h-5" />
@@ -172,8 +187,8 @@ export default function Onboarding() {
 
 function PhoneMockup({ children }: { children: ReactNode }) {
   return (
-    <div className="relative w-full max-w-[390px] aspect-[9/19.5] bg-foreground rounded-[3rem] p-3 shadow-2xl">
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-40 h-7 bg-foreground rounded-b-3xl z-10" />
+    <div className="relative w-full max-w-[390px] aspect-[9/19.5] bg-[#2D2D2D] rounded-[3rem] p-3 shadow-2xl">
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-40 h-7 bg-[#2D2D2D] rounded-b-3xl z-10" />
       <div className="relative h-full bg-white rounded-[2.5rem] overflow-hidden">{children}</div>
     </div>
   );
