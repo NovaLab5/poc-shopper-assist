@@ -31,3 +31,7 @@ dist-ssr
 # Docker volumes
 mongodb_data/
 
+# Large Figma data files (>100MB)
+figma-data.json
+figma-file.json
+
