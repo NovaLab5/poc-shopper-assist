@@ -176,7 +176,18 @@ export function getProductsByCategory(category: string): Product[] {
 
 // Helper function to get a single product
 export function getProductById(id: string): Product | undefined {
-  return mockProducts.find(p => p.id === id);
+  // Handle both 'prod-001' format and numeric '1' format
+  const product = mockProducts.find(p => p.id === id);
+  if (product) return product;
+  
+  // Try numeric lookup (1 -> prod-001)
+  const numericId = parseInt(id, 10);
+  if (!isNaN(numericId) && numericId > 0) {
+    const paddedId = `prod-${String(numericId).padStart(3, '0')}`;
+    return mockProducts.find(p => p.id === paddedId);
+  }
+  
+  return undefined;
 }
 
 // Calculate price trend (for alerts/badges)
