@@ -54,21 +54,22 @@ function generatePriceHistory(currentPrice: number, variance: number = 0.15): Pr
 export const mockProducts: Product[] = [
   {
     id: 'prod-001',
-    name: 'Sony WH-1000XM5 Wireless Headphones',
+    name: 'Sony WH-1000XM5 Wireless Noise Cancelling Headphones',
     brand: 'Sony',
     price: 349.99,
     originalPrice: 399.99,
-    image: 'https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?w=500',
-    category: 'Electronics',
-    rating: 4.8,
-    reviewCount: 12453,
-    description: 'Industry-leading noise cancellation with exceptional sound quality and 30-hour battery life.',
+    image: 'https://images.unsplash.com/photo-1519677100203-a0e668c92439?w=500',
+    category: 'Audio',
+    rating: 4.7,
+    reviewCount: 23874,
+    description:
+      'Flagship over-ear headphones with adaptive noise cancellation, rich detail, and up to 30 hours of battery life.',
     features: [
-      'Industry-leading noise cancellation',
-      '30-hour battery life',
-      'Multi-point connection',
-      'Premium comfort design',
-      'Quick charging (3 min = 3 hours)'
+      'Adaptive noise cancellation with auto wind reduction',
+      '30-hour battery with fast charge',
+      'Crystal-clear beamforming microphones',
+      'Multipoint Bluetooth pairing',
+      'Soft-fit leather for long sessions'
     ],
     priceHistory: generatePriceHistory(349.99, 0.12),
     inStock: true,
@@ -76,91 +77,95 @@ export const mockProducts: Product[] = [
   },
   {
     id: 'prod-002',
-    name: 'Anker Soundcore Q30 Wireless Headphones',
-    brand: 'Anker',
-    price: 79.99,
-    originalPrice: 99.99,
-    image: 'https://images.unsplash.com/photo-1545127398-14699f92334b?w=500',
-    category: 'Electronics',
-    rating: 4.5,
-    reviewCount: 8932,
-    description: 'Affordable noise-cancelling headphones with impressive 40-hour battery life.',
+    name: 'Apple AirPods Pro (2nd Gen, USB-C)',
+    brand: 'Apple',
+    price: 249.99,
+    originalPrice: 249.99,
+    image: 'https://images.unsplash.com/photo-1585386959984-a41552231693?w=500',
+    category: 'Audio',
+    rating: 4.6,
+    reviewCount: 40211,
+    description:
+      'In-ear earbuds with adaptive transparency, personalized spatial audio, and a USB-C charging case.',
     features: [
-      'Active noise cancellation',
-      '40-hour battery life',
-      'BassUp technology',
-      'Comfortable earpads',
-      'App customization'
+      'Active Noise Cancellation + Adaptive Transparency',
+      'Personalized Spatial Audio with dynamic head tracking',
+      'Up to 6 hours of listening time',
+      'USB-C MagSafe charging case',
+      'IP54 dust, sweat, and water resistance'
     ],
-    priceHistory: generatePriceHistory(79.99, 0.10),
+    priceHistory: generatePriceHistory(249.99, 0.08),
     inStock: true,
-    storeLink: 'https://amazon.com'
+    storeLink: 'https://apple.com'
   },
   {
     id: 'prod-003',
-    name: 'Bose QuietComfort Ultra Wireless Headphones',
-    brand: 'Bose',
-    price: 429.00,
-    originalPrice: 449.00,
-    image: 'https://images.unsplash.com/photo-1484704849700-f032a568e944?w=500',
-    category: 'Electronics',
-    rating: 4.9,
-    reviewCount: 5621,
-    description: 'Premium spatial audio experience with world-class noise cancellation.',
+    name: 'Google Nest Hub (2nd Gen)',
+    brand: 'Google',
+    price: 99.99,
+    originalPrice: 109.99,
+    image: 'https://images.unsplash.com/photo-1512446733611-9099a758e593?w=500',
+    category: 'Smart Home',
+    rating: 4.4,
+    reviewCount: 15432,
+    description:
+      '7-inch smart display that manages your home, plays media, and offers gentle sleep insights.',
     features: [
-      'Immersive spatial audio',
-      'World-class noise cancellation',
-      '24-hour battery life',
-      'CustomTune technology',
-      'Premium materials'
+      '7-inch display with ambient EQ',
+      'Sleep sensing insights (compatible accounts)',
+      'Google Assistant voice control',
+      'Smart home dashboard',
+      'Speaker tuned for room-filling sound'
     ],
-    priceHistory: generatePriceHistory(429.00, 0.08),
+    priceHistory: generatePriceHistory(99.99, 0.15),
     inStock: true,
-    storeLink: 'https://amazon.com'
+    storeLink: 'https://store.google.com'
   },
   {
     id: 'prod-004',
-    name: 'Patagonia Better Sweater Fleece Jacket',
-    brand: 'Patagonia',
-    price: 139.00,
-    originalPrice: 159.00,
-    image: 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=500',
-    category: 'Apparel',
-    rating: 4.7,
-    reviewCount: 3421,
-    description: 'Classic fleece jacket made from recycled polyester with a cozy sweater-knit exterior.',
+    name: 'Amazon Echo Show 8 (3rd Gen)',
+    brand: 'Amazon',
+    price: 149.99,
+    originalPrice: 169.99,
+    image: 'https://images.unsplash.com/photo-1518441983756-8a1621f5a8b8?w=500',
+    category: 'Smart Home',
+    rating: 4.5,
+    reviewCount: 19752,
+    description:
+      'Smart display with spatial audio, a crisp 8-inch screen, and built-in smart home hub.',
     features: [
-      'Made from recycled polyester',
-      'Sweater-knit exterior',
-      'Full-zip design',
-      'Zippered handwarmer pockets',
-      'Fair Trade Certified sewn'
+      '8-inch HD touch display',
+      'Spatial audio with adaptive room tuning',
+      'Built-in smart home hub',
+      '13 MP camera with auto-framing',
+      'Works with Alexa routines'
     ],
-    priceHistory: generatePriceHistory(139.00, 0.15),
+    priceHistory: generatePriceHistory(149.99, 0.14),
     inStock: true,
-    storeLink: 'https://patagonia.com'
+    storeLink: 'https://amazon.com'
   },
   {
     id: 'prod-005',
-    name: 'Ninja Creami Ice Cream Maker',
-    brand: 'Ninja',
-    price: 179.99,
-    originalPrice: 229.99,
-    image: 'https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=500',
-    category: 'Home & Kitchen',
-    rating: 4.6,
-    reviewCount: 7834,
-    description: 'Turn almost anything into ice cream, sorbet, gelato, and more.',
+    name: 'Logitech MX Master 3S Wireless Mouse',
+    brand: 'Logitech',
+    price: 99.99,
+    originalPrice: 119.99,
+    image: 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=500',
+    category: 'Tech Gadgets',
+    rating: 4.7,
+    reviewCount: 28650,
+    description:
+      'Ergonomic productivity mouse with ultra-quiet clicks and precision tracking on any surface.',
     features: [
-      '7 one-touch programs',
-      'Create custom frozen treats',
-      'Mix-in functionality',
-      'Easy to clean',
-      'Includes 3 pint containers'
+      'MagSpeed electromagnetic scrolling',
+      '8K DPI tracking on glass',
+      'Quiet clicks for focused work',
+      'USB-C fast charging',
+      'Pair with up to 3 devices'
     ],
-    priceHistory: generatePriceHistory(179.99, 0.18),
+    priceHistory: generatePriceHistory(99.99, 0.1),
     inStock: true,
-    storeLink: 'https://amazon.com'
+    storeLink: 'https://logitech.com'
   }
 ];
 

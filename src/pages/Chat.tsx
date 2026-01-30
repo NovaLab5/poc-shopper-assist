@@ -72,8 +72,8 @@ export default function Chat() {
   const suggestedPrompts = useMemo(
     () => [
       'Noise-cancelling headphones for work',
-      'Cozy layer for weekend hikes',
-      'Kitchen gadget for a foodie',
+      'Smart display for the kitchen',
+      'Portable power bank for travel',
     ],
     []
   );
@@ -178,15 +178,21 @@ export default function Chat() {
               <AvatarImage src={sourDillmasLogo} alt="Sweet Dill" />
               <AvatarFallback>SD</AvatarFallback>
             </Avatar>
-            <div>
-              <p className="text-sm opacity-90">Sweet Dill</p>
-              <h1 className="text-lg font-semibold flex items-center gap-2">
-                AI Shopping Assistant
-                <Sparkles className="w-4 h-4" />
-              </h1>
+            <div className="space-y-0.5">
+              <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-white/80">
+                Sweet Dill
+              </p>
+              <div className="flex items-center gap-2">
+                <h1 className="text-[17px] font-semibold leading-5">
+                  AI Shopping Assistant
+                </h1>
+                <Sparkles className="w-4 h-4 text-white/90 translate-y-[1px]" />
+              </div>
             </div>
           </div>
-          <Badge className="bg-white/20 text-white border-white/30">Live</Badge>
+          <Badge className="rounded-full bg-white/15 text-white border-white/40 px-2.5 py-1 text-[11px] font-semibold tracking-[0.08em] uppercase">
+            Live
+          </Badge>
         </div>
       </header>
 
@@ -472,10 +478,9 @@ function getProductRecommendations(
 ): ProductRecommendation[] {
   const interestText = info.interests?.toLowerCase() ?? '';
   const interestMatches = [
-    { keys: ['music', 'audio', 'headphone', 'podcast'], category: 'Electronics' },
-    { keys: ['outdoor', 'trail', 'hike', 'camp', 'jacket'], category: 'Apparel' },
-    { keys: ['kitchen', 'cook', 'bake', 'food'], category: 'Home & Kitchen' },
-    { keys: ['style', 'fashion', 'fitness', 'gym'], category: 'Apparel' },
+    { keys: ['music', 'audio', 'headphone', 'earbud', 'podcast'], category: 'Audio' },
+    { keys: ['smart', 'home', 'alexa', 'nest', 'display', 'assistant'], category: 'Smart Home' },
+    { keys: ['tech', 'gadget', 'desk', 'mouse', 'travel', 'battery', 'charger'], category: 'Tech Gadgets' },
   ];
 
   const matchedCategory = interestMatches.find((match) =>
@@ -486,7 +491,11 @@ function getProductRecommendations(
     ? mockProducts.filter((product) => product.category === matchedCategory)
     : mockProducts;
 
-  const picks = products.length >= 3 ? products.slice(0, 3) : mockProducts.slice(0, 3);
+  const picks = [...products];
+  if (picks.length < 3) {
+    const fallback = mockProducts.filter((product) => !picks.includes(product));
+    picks.push(...fallback.slice(0, 3 - picks.length));
+  }
 
   return [
     {

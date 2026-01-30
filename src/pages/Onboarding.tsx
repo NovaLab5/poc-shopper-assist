@@ -1,9 +1,8 @@
 import { useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronRight, Sparkles, Gift, TrendingDown, MessageSquare } from 'lucide-react';
+import { ChevronRight, Gift, TrendingDown, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import sourDillmasLogo from '@/assets/sour-dillmas-logo.png';
 
@@ -94,60 +93,32 @@ export default function Onboarding() {
             </div>
 
             <div className="text-center mb-6">
-              <h1 className="text-2xl font-bold text-foreground mb-2">{step.title}</h1>
-              <p className="text-base text-primary font-medium">{step.subtitle}</p>
+              <h1 className="text-[22px] font-semibold text-foreground mb-2">
+                {step.title}
+              </h1>
+              <p className="text-[15px] text-primary font-medium">{step.subtitle}</p>
             </div>
 
             {currentStep === 0 && (
               <div className="flex-1 space-y-6">
-                <p className="text-muted-foreground text-center">{step.description}</p>
+                <p className="text-sm text-muted-foreground text-center leading-6">
+                  {step.description}
+                </p>
 
-                <Card className="border border-border/60 shadow-sm">
-                  <CardContent className="p-4 space-y-3">
-                    <div className="flex items-start gap-3">
-                      <Avatar className="h-8 w-8 border border-primary/20">
-                        <AvatarImage src={sourDillmasLogo} alt="Sweet Dill" />
-                        <AvatarFallback>SD</AvatarFallback>
-                      </Avatar>
-                      <div className="bg-muted rounded-2xl rounded-bl-sm px-3 py-2 text-sm text-foreground">
-                        Who are you shopping for?
-                      </div>
-                    </div>
-                    <div className="flex flex-wrap gap-2 ml-11">
-                      <Badge variant="secondary" className="rounded-full px-3 py-1">
-                        Myself
-                      </Badge>
-                      <Badge variant="secondary" className="rounded-full px-3 py-1">
-                        A friend
-                      </Badge>
-                    </div>
-                    <div className="flex justify-end">
-                      <div className="bg-primary text-primary-foreground rounded-2xl rounded-br-sm px-3 py-2 text-sm">
-                        A friend
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <Avatar className="h-8 w-8 border border-primary/20">
-                        <AvatarImage src={sourDillmasLogo} alt="Sweet Dill" />
-                        <AvatarFallback>SD</AvatarFallback>
-                      </Avatar>
-                      <div className="bg-muted rounded-2xl rounded-bl-sm px-3 py-2 text-sm text-foreground">
-                        Great. What is their name?
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {step.features?.map((feature, idx) => (
                     <Card key={idx} className="border border-border/60 shadow-sm">
-                      <CardContent className="p-4 flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                      <CardContent className="p-5 flex items-start gap-4">
+                        <div className="w-11 h-11 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                           <feature.icon className="w-5 h-5 text-primary" />
                         </div>
                         <div>
-                          <h3 className="font-semibold text-foreground mb-1">{feature.title}</h3>
-                          <p className="text-sm text-muted-foreground">{feature.description}</p>
+                          <h3 className="text-[15px] font-semibold text-foreground mb-1">
+                            {feature.title}
+                          </h3>
+                          <p className="text-[13px] leading-5 text-muted-foreground">
+                            {feature.description}
+                          </p>
                         </div>
                       </CardContent>
                     </Card>

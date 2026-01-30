@@ -52,7 +52,7 @@ export default function Friends() {
               Start a gift chat and Sweet Dill will create a friend profile for you.
             </p>
             <Button onClick={() => navigate('/chat?mode=gift')} className="rounded-full">
-              Start gift chat
+              Start a gift chat
             </Button>
           </div>
         ) : (
