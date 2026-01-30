@@ -43,28 +43,31 @@ export default function Chat() {
       </header>
 
       {step === 'initial' ? (
-        <div className="flex-1 flex flex-col items-center justify-center px-6 pb-40">
-          {/* Avatar - smaller and centered to match Figma */}
+        <div className="flex-1 flex flex-col items-center justify-center px-4 pb-8">
+          {/* Avatar - smaller and centered to match Figma with proper shadow */}
           <div className="mb-8 flex justify-center">
-            <Avatar className="h-16 w-16 border-4 border-white shadow-md">
-              <AvatarImage src={sourDillmasLogo} alt="Sweet Dill" />
-              <AvatarFallback>SD</AvatarFallback>
-            </Avatar>
+            <div className="relative">
+              <div className="absolute inset-0 bg-white rounded-full shadow-lg -z-10" style={{ transform: 'scale(1.3)' }}></div>
+              <Avatar className="h-16 w-16 border-2 border-gray-200 relative z-10">
+                <AvatarImage src={sourDillmasLogo} alt="Sweet Dill" />
+                <AvatarFallback>SD</AvatarFallback>
+              </Avatar>
+            </div>
           </div>
 
           {/* Heading - single line to match Figma */}
-          <h2 className="text-[26px] font-normal text-[#414658] text-center mb-12 leading-tight whitespace-nowrap" 
+          <h2 className="text-[24px] font-normal text-[#414658] text-center mb-10 leading-tight whitespace-nowrap" 
               style={{ fontFamily: 'Figtree, system-ui, -apple-system, sans-serif' }}>
             Who are you shopping for?
           </h2>
 
-          {/* Buttons - HORIZONTAL layout to match Figma */}
-          <div className="flex gap-3 w-full max-w-[380px] px-4">
+          {/* Buttons - HORIZONTAL layout to match Figma with proper sizing */}
+          <div className="flex gap-3 w-full max-w-[360px] px-4">
             <button
               onClick={() => handleChoice('myself')}
-              className="flex-1 h-[52px] rounded-full bg-white border-[2px] border-gray-300 
-                         flex items-center justify-center gap-2 text-[16px] font-medium 
-                         text-[#374151] hover:bg-gray-50 active:bg-gray-100 transition-colors"
+              className="flex-1 h-[56px] rounded-full bg-white border-[2px] border-gray-300 
+                         flex items-center justify-center gap-2 text-[14px] font-medium 
+                         text-[#374151] hover:bg-gray-50 active:bg-gray-100 transition-colors px-4 whitespace-nowrap"
             >
               <div className="w-5 h-5 flex items-center justify-center text-[#4ECDC4]">
                 <User className="w-5 h-5" strokeWidth={2} />
@@ -74,9 +77,9 @@ export default function Chat() {
 
             <button
               onClick={() => handleChoice('friend')}
-              className="flex-1 h-[52px] rounded-full bg-white border-[2px] border-gray-300 
-                         flex items-center justify-center gap-2 text-[16px] font-medium 
-                         text-[#374151] hover:bg-gray-50 active:bg-gray-100 transition-colors"
+              className="flex-1 h-[56px] rounded-full bg-white border-[2px] border-gray-300 
+                         flex items-center justify-center gap-2 text-[14px] font-medium 
+                         text-[#374151] hover:bg-gray-50 active:bg-gray-100 transition-colors px-4 whitespace-nowrap"
             >
               <div className="w-5 h-5 flex items-center justify-center text-[#FF6B6B]">
                 <Gift className="w-5 h-5" strokeWidth={2} />
