@@ -43,7 +43,7 @@ export default function Chat() {
       </header>
 
       {step === 'initial' ? (
-        <div className="flex-1 flex flex-col items-center justify-center px-4 pb-8">
+        <div className="flex flex-col items-center justify-center px-4 pb-8" style={{ height: 'calc(100vh - 280px)' }}>
           {/* Avatar - smaller and centered to match Figma with proper shadow */}
           <div className="mb-8 flex justify-center">
             <div className="relative">
@@ -118,8 +118,8 @@ export default function Chat() {
         </div>
       )}
 
-      {/* Bottom Input Area */}
-      <div className="bg-white border-t border-gray-200 px-4 py-3 safe-area-bottom">
+      {/* Bottom Input Area - positioned above where keyboard would be */}
+      <div className="bg-white border-t border-gray-200 px-4 py-4 mb-4">
         <div className="flex items-center gap-3">
           <button className="p-2 text-[#4A5568]">
             <Plus className="w-6 h-6" />
@@ -140,8 +140,6 @@ export default function Chat() {
           </button>
         </div>
       </div>
-
-      <BottomNav activeTab="chat" />
     </div>
   );
 }
