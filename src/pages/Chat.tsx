@@ -8,11 +8,21 @@ import sourDillmasLogo from '@/assets/sour-dillmas-logo.png';
 export default function Chat() {
   const [step, setStep] = useState<'initial' | 'conversation'>('initial');
   const [input, setInput] = useState('');
+  const [messages, setMessages] = useState<Array<{id: number; text: string; sender: 'user' | 'bot'}>>([]);
   const navigate = useNavigate();
 
   const handleChoice = (choice: 'myself' | 'friend') => {
     setStep('conversation');
-    // Will navigate to conversation flow
+    // Add initial bot message
+    setMessages([
+      {
+        id: 1,
+        text: choice === 'myself' 
+          ? "Great! Tell me what you're looking for today."
+          : "Awesome! Who are you shopping for?",
+        sender: 'bot'
+      }
+    ]);
   };
 
   return (
@@ -21,8 +31,8 @@ export default function Chat() {
       <header className="bg-white border-b border-gray-200 shrink-0 px-4 py-3">
         <div className="flex items-center justify-between">
           <h1 
-            className="text-[26px] font-bold text-[#4A5568] italic" 
-            style={{ fontFamily: 'Georgia, serif' }}
+            className="text-[26px] font-bold text-[#4A5568]" 
+            style={{ fontFamily: 'Shrikhand, cursive' }}
           >
             Sweet Dill
           </h1>
@@ -34,26 +44,26 @@ export default function Chat() {
 
       {step === 'initial' ? (
         <div className="flex-1 flex flex-col items-center justify-center px-6 pb-40">
-          {/* Avatar */}
-          <div className="mb-10">
-            <Avatar className="h-28 w-28 border-4 border-white shadow-md">
+          {/* Avatar - smaller and centered */}
+          <div className="mb-8 flex justify-center">
+            <Avatar className="h-20 w-20 border-4 border-white shadow-md">
               <AvatarImage src={sourDillmasLogo} alt="Sweet Dill" />
               <AvatarFallback>SD</AvatarFallback>
             </Avatar>
           </div>
 
           {/* Heading */}
-          <h2 className="text-[32px] font-normal text-[#414658] text-center mb-16 leading-tight" 
+          <h2 className="text-[28px] font-normal text-[#414658] text-center mb-12 leading-tight" 
               style={{ fontFamily: 'Figtree, system-ui, -apple-system, sans-serif' }}>
-            Who are you<br />shopping for?
+            Who are you shopping for?
           </h2>
 
-          {/* Buttons */}
-          <div className="w-full max-w-[340px] space-y-4">
+          {/* Buttons - HORIZONTAL layout */}
+          <div className="flex gap-3 w-full max-w-[380px] px-4">
             <button
               onClick={() => handleChoice('myself')}
-              className="w-full h-[56px] rounded-full bg-white border-[2px] border-gray-300 
-                         flex items-center justify-center gap-3 text-[17px] font-medium 
+              className="flex-1 h-[52px] rounded-full bg-white border-[2px] border-gray-300 
+                         flex items-center justify-center gap-2 text-[16px] font-medium 
                          text-[#374151] hover:bg-gray-50 active:bg-gray-100 transition-colors"
             >
               <div className="w-5 h-5 flex items-center justify-center text-[#4ECDC4]">
@@ -64,8 +74,8 @@ export default function Chat() {
 
             <button
               onClick={() => handleChoice('friend')}
-              className="w-full h-[56px] rounded-full bg-white border-[2px] border-gray-300 
-                         flex items-center justify-center gap-3 text-[17px] font-medium 
+              className="flex-1 h-[52px] rounded-full bg-white border-[2px] border-gray-300 
+                         flex items-center justify-center gap-2 text-[16px] font-medium 
                          text-[#374151] hover:bg-gray-50 active:bg-gray-100 transition-colors"
             >
               <div className="w-5 h-5 flex items-center justify-center text-[#FF6B6B]">
@@ -74,10 +84,51 @@ export default function Chat() {
               Someone else
             </button>
           </div>
+
+          {/* Chat bot area - message list placeholder */}
+          <div className="mt-8 w-full max-w-[380px] px-4">
+            <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-200">
+              <div className="flex items-start gap-3">
+                <Avatar className="h-8 w-8 shrink-0">
+                  <AvatarImage src={sourDillmasLogo} alt="Bot" />
+                  <AvatarFallback>SD</AvatarFallback>
+                </Avatar>
+                <div className="flex-1">
+                  <p className="text-[14px] text-[#6B7280] leading-relaxed">
+                    Hi! I'm your shopping assistant. Pick who you're shopping for, and let's find the perfect product together.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       ) : (
-        <div className="flex-1">
-          {/* Conversation view - to be built */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Chat messages */}
+          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+            {messages.map((msg) => (
+              <div 
+                key={msg.id}
+                className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+              >
+                {msg.sender === 'bot' && (
+                  <Avatar className="h-8 w-8 shrink-0 mr-2">
+                    <AvatarImage src={sourDillmasLogo} alt="Bot" />
+                    <AvatarFallback>SD</AvatarFallback>
+                  </Avatar>
+                )}
+                <div 
+                  className={`max-w-[75%] rounded-2xl px-4 py-3 ${
+                    msg.sender === 'user'
+                      ? 'bg-[#8BC34A] text-white'
+                      : 'bg-white border border-gray-200 text-[#374151]'
+                  }`}
+                >
+                  <p className="text-[15px] leading-relaxed">{msg.text}</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -92,11 +143,10 @@ export default function Chat() {
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            disabled={step === 'initial'}
-            placeholder=""
+            placeholder={step === 'initial' ? '' : 'Type a message...'}
             className="flex-1 h-10 px-4 rounded-full border border-gray-300 
                      text-base placeholder:text-gray-400 focus:outline-none 
-                     focus:border-gray-400 disabled:bg-gray-50"
+                     focus:border-gray-400"
           />
           
           <button className="p-2 text-[#4A5568]">
