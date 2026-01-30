@@ -58,8 +58,8 @@ export default function Profile() {
             <AvatarImage src={sourDillmasLogo} alt="Profile" />
             <AvatarFallback>SD</AvatarFallback>
           </Avatar>
-          <h1 className="text-xl font-bold mb-1">{userName}</h1>
-          <p className="text-sm text-white/90">{userEmail}</p>
+          <h1 className="text-[20px] font-semibold mb-2">{userName}</h1>
+          <p className="text-[13px] text-white/90">{userEmail}</p>
         </div>
       </header>
 
@@ -68,16 +68,22 @@ export default function Profile() {
           <CardContent className="p-4">
             <div className="grid grid-cols-3 gap-4 text-center">
               <div>
-                <p className="text-2xl font-bold text-primary">{state.wishlist.length}</p>
-                <p className="text-xs text-muted-foreground">Wishlist</p>
+                <p className="text-[28px] font-bold text-[#1C1C1E] leading-none">
+                  {state.wishlist.length}
+                </p>
+                <p className="text-[13px] text-[#6B7280]">Wishlist</p>
               </div>
               <div>
-                <p className="text-2xl font-bold text-primary">{state.collections.length}</p>
-                <p className="text-xs text-muted-foreground">Collections</p>
+                <p className="text-[28px] font-bold text-[#1C1C1E] leading-none">
+                  {state.collections.length}
+                </p>
+                <p className="text-[13px] text-[#6B7280]">Collections</p>
               </div>
               <div>
-                <p className="text-2xl font-bold text-primary">{state.friends.length}</p>
-                <p className="text-xs text-muted-foreground">Friends</p>
+                <p className="text-[28px] font-bold text-[#1C1C1E] leading-none">
+                  {state.friends.length}
+                </p>
+                <p className="text-[13px] text-[#6B7280]">Friends</p>
               </div>
             </div>
           </CardContent>
@@ -87,7 +93,7 @@ export default function Profile() {
       <div className="flex-1 overflow-y-auto px-4 pb-6 space-y-6">
         {menuSections.map((section) => (
           <div key={section.title}>
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 px-2">
+            <h2 className="text-[13px] font-semibold text-[#6B7280] uppercase tracking-wide mb-2 px-2">
               {section.title}
             </h2>
             <Card className="border border-border/60 overflow-hidden">
@@ -99,20 +105,24 @@ export default function Profile() {
                       key={item.label}
                       variant="ghost"
                       onClick={item.onClick}
-                      className={`w-full flex items-center justify-between px-4 py-4 rounded-none ${
+                      className={`w-full flex items-center justify-between px-4 py-3 min-h-[44px] rounded-none ${
                         itemIdx < section.items.length - 1 ? 'border-b border-border/60' : ''
                       }`}
                     >
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2">
                         <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                           <Icon className="w-5 h-5 text-primary" />
                         </div>
-                        <span className="font-medium text-foreground">{item.label}</span>
+                        <span className="text-[17px] font-normal text-[#1C1C1E]">
+                          {item.label}
+                        </span>
                         {item.badge && (
-                          <Badge className="bg-red-500 text-white text-xs">{item.badge}</Badge>
+                          <Badge className="bg-red-500 text-white text-[13px]">
+                            {item.badge}
+                          </Badge>
                         )}
                       </div>
-                      <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                      <ChevronRight className="w-5 h-5 text-[#9CA3AF]" />
                     </Button>
                   );
                 })}
@@ -124,7 +134,7 @@ export default function Profile() {
         <Button
           onClick={handleLogout}
           variant="outline"
-          className="w-full flex items-center justify-center gap-2 p-4 rounded-xl text-destructive border-destructive/30"
+          className="w-full flex items-center justify-center gap-2 p-4 rounded-xl text-[17px] text-destructive border-destructive/30"
         >
           <LogOut className="w-5 h-5" />
           <span>Log Out</span>

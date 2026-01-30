@@ -171,26 +171,26 @@ export default function Chat() {
 
   return (
     <div className="h-screen flex flex-col bg-background">
-      <header className="gradient-header px-4 py-4 shrink-0">
-        <div className="flex items-center justify-between text-white">
-          <div className="flex items-center gap-3">
+      <header className="gradient-header shrink-0">
+        <div className="h-[52px] px-4 flex items-center justify-between text-white">
+          <div className="flex items-center gap-2">
             <Avatar className="h-9 w-9 border border-white/40">
               <AvatarImage src={sourDillmasLogo} alt="Sweet Dill" />
               <AvatarFallback>SD</AvatarFallback>
             </Avatar>
-            <div className="space-y-0.5">
-              <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-white/80">
+            <div className="space-y-2">
+              <p className="text-[13px] font-normal uppercase tracking-[0.12em] text-white/70">
                 Sweet Dill
               </p>
               <div className="flex items-center gap-2">
-                <h1 className="text-[17px] font-semibold leading-5">
+                <h1 className="text-[17px] font-semibold leading-[22px]">
                   AI Shopping Assistant
                 </h1>
                 <Sparkles className="w-4 h-4 text-white/90 translate-y-[1px]" />
               </div>
             </div>
           </div>
-          <Badge className="rounded-full bg-white/15 text-white border-white/40 px-2.5 py-1 text-[11px] font-semibold tracking-[0.08em] uppercase">
+          <Badge className="rounded-full bg-white/15 text-white border-white/40 px-2.5 py-1 text-[13px] font-semibold tracking-[0.08em] uppercase">
             Live
           </Badge>
         </div>
@@ -214,12 +214,12 @@ export default function Chat() {
                 <AvatarImage src={sourDillmasLogo} alt="Sweet Dill" />
                 <AvatarFallback>SD</AvatarFallback>
               </Avatar>
-              <Card className="bg-muted border-none">
+              <Card className="bg-[#F2F2F7] border-none rounded-2xl">
                 <CardContent className="px-4 py-3">
-                  <div className="flex gap-1">
-                    <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" />
-                    <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce [animation-delay:150ms]" />
-                    <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce [animation-delay:300ms]" />
+                  <div className="flex gap-2">
+                    <div className="w-2 h-2 bg-[#9CA3AF] rounded-full animate-bounce" />
+                    <div className="w-2 h-2 bg-[#9CA3AF] rounded-full animate-bounce [animation-delay:150ms]" />
+                    <div className="w-2 h-2 bg-[#9CA3AF] rounded-full animate-bounce [animation-delay:300ms]" />
                   </div>
                 </CardContent>
               </Card>
@@ -236,7 +236,7 @@ export default function Chat() {
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="Message Sweet Dill..."
-            className="flex-1 h-12 rounded-full px-4"
+            className="flex-1 h-12 rounded-full px-4 text-[15px] placeholder:text-[15px]"
           />
           <Button
             onClick={handleSend}
@@ -266,9 +266,9 @@ function MessageBubble({
   if (message.role === 'user') {
     return (
       <div className="flex justify-end">
-        <Card className="bg-primary text-primary-foreground border-none max-w-[75%] rounded-2xl rounded-br-sm">
-          <CardContent className="px-4 py-3 text-sm">{message.content}</CardContent>
-        </Card>
+        <div className="bg-primary text-primary-foreground max-w-[75%] rounded-2xl rounded-br-sm px-4 py-3">
+          <p className="text-[15px] leading-[20px]">{message.content}</p>
+        </div>
       </div>
     );
   }
@@ -280,37 +280,34 @@ function MessageBubble({
         <AvatarFallback>SD</AvatarFallback>
       </Avatar>
       <div className="flex-1">
-        <Card className="bg-muted border-none rounded-2xl rounded-bl-sm max-w-[85%]">
-          <CardContent className="px-4 py-3 text-sm text-foreground">
-            {message.content}
-          </CardContent>
-        </Card>
+        <div className="bg-[#F2F2F7] rounded-2xl rounded-bl-sm max-w-[280px] px-4 py-3">
+          <p className="text-[15px] leading-[20px] text-[#1C1C1E]">{message.content}</p>
+        </div>
 
         {message.quickReplies && message.quickReplies.length > 0 && (
-          <div className="flex flex-wrap gap-2 mt-3">
+          <div className="flex flex-wrap gap-2 mt-4">
             {message.quickReplies.map((reply) => (
-              <Button
+              <button
                 key={reply.value}
-                variant="secondary"
-                size="sm"
+                type="button"
                 onClick={() => onQuickReply(reply.value)}
-                className="rounded-full"
+                className="rounded-full px-6 py-3 min-h-[44px] text-[17px] text-[#1C1C1E] bg-white border border-gray-200 hover:bg-gray-50 active:bg-gray-100"
               >
                 {reply.label}
-              </Button>
+              </button>
             ))}
           </div>
         )}
 
         {message.products && message.products.length > 0 && (
-          <div className="mt-4 space-y-3">
+          <div className="mt-4 space-y-4">
             {message.products.map((rec) => (
               <div key={rec.product.id}>
-                <div className="text-xs text-muted-foreground mb-2 px-2 flex items-center gap-2">
+                <div className="text-[13px] leading-[18px] text-[#6B7280] mb-2 px-2 flex items-center gap-2">
                   <Badge
                     variant="outline"
                     className={cn(
-                      'capitalize',
+                      'capitalize text-[13px] leading-[18px]',
                       rec.tier === 'best' && 'border-amber-500 text-amber-600',
                       rec.tier === 'budget' && 'border-emerald-500 text-emerald-600',
                       rec.tier === 'upgrade' && 'border-indigo-500 text-indigo-600'

@@ -28,35 +28,38 @@ export default function Friends() {
     <div className="min-h-screen bg-background flex flex-col">
       <header className="gradient-header px-4 py-4 shrink-0">
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold text-white">Friends</h1>
+          <h1 className="text-[17px] font-semibold text-white">Friends</h1>
           <Button
             size="icon"
             variant="ghost"
-            className="text-white hover:text-white hover:bg-white/20"
+            className="h-11 w-11 text-white hover:text-white hover:bg-white/20"
             onClick={() => navigate('/chat?mode=gift')}
           >
             <Plus className="w-5 h-5" />
           </Button>
         </div>
-        <p className="text-sm text-white/90 mt-1">People you shop for</p>
+        <p className="text-[13px] text-white/90 mt-2">People you shop for</p>
       </header>
 
       <div className="flex-1 overflow-y-auto px-4 py-6">
         {friends.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center px-6">
-            <Users className="w-16 h-16 text-muted-foreground mb-4" />
-            <h2 className="text-lg font-semibold text-foreground mb-2">
+          <div className="flex flex-col items-center justify-center h-full text-center px-6 py-12">
+            <Users className="w-24 h-24 text-[#9CA3AF] mb-6" />
+            <h2 className="text-[20px] font-semibold text-[#1C1C1E] mb-2">
               No friends added yet
             </h2>
-            <p className="text-sm text-muted-foreground mb-6">
+            <p className="text-[15px] leading-[20px] text-[#6B7280] mb-6 max-w-sm">
               Start a gift chat and Sweet Dill will create a friend profile for you.
             </p>
-            <Button onClick={() => navigate('/chat?mode=gift')} className="rounded-full">
+            <Button
+              onClick={() => navigate('/chat?mode=gift')}
+              className="rounded-full px-6 py-3 min-h-[44px] text-[17px] font-normal"
+            >
               Start a gift chat
             </Button>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {friends.map((friend) => (
               <Card
                 key={friend.id}
@@ -69,38 +72,40 @@ export default function Friends() {
                   </Avatar>
 
                   <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-semibold text-foreground">{friend.name}</h3>
+                    <div className="flex items-center gap-2 mb-2">
+                      <h3 className="text-[17px] font-semibold text-[#1C1C1E]">
+                        {friend.name}
+                      </h3>
                       {friend.budget && (
-                        <Badge variant="secondary" className="rounded-full">
+                        <Badge variant="secondary" className="rounded-full text-[13px]">
                           {friend.budget}
                         </Badge>
                       )}
                     </div>
-                    <div className="flex flex-wrap gap-1 mb-2">
+                    <div className="flex flex-wrap gap-2 mb-2">
                       {friend.interests.length > 0 ? (
                         friend.interests.map((interest) => (
                           <Badge
                             key={interest}
                             variant="outline"
-                            className="rounded-full text-xs"
+                            className="rounded-full text-[13px]"
                           >
                             {interest}
                           </Badge>
                         ))
                       ) : (
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-[13px] text-[#6B7280]">
                           Interests not set yet
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-2 text-[13px] text-[#6B7280]">
                       <Gift className="w-3 h-3" />
                       <span>Updated {new Date(friend.updatedAt).toLocaleDateString()}</span>
                     </div>
                   </div>
 
-                  <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                  <ChevronRight className="w-5 h-5 text-[#9CA3AF]" />
                 </CardContent>
               </Card>
             ))}
