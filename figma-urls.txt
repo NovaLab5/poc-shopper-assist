@@ -1,0 +1,6 @@
+﻿{
+    "417:40232":  "https://figma-alpha-api.s3.us-west-2.amazonaws.com/images/646c6896-158a-4071-ba20-ad927ed54998",
+    "417:40266":  "https://figma-alpha-api.s3.us-west-2.amazonaws.com/images/d46ee50c-0ca7-4005-a3cf-842b89a2d700",
+    "393:33071":  "https://figma-alpha-api.s3.us-west-2.amazonaws.com/images/9d70d0a2-beed-4095-842e-e3e4d4de438e",
+    "393:32665":  "https://figma-alpha-api.s3.us-west-2.amazonaws.com/images/8738cc0d-fcc8-43f6-8057-aa415accf4e4"
+}
